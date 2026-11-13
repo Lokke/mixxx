@@ -4,6 +4,7 @@
 #include <QList>
 #include <QObject>
 #include <QPointer>
+#include <QUrl>
 
 #include "analyzer/trackanalysisscheduler.h"
 #include "library/library_decl.h"
@@ -25,6 +26,7 @@ class LibraryFeature;
 class LibraryTableModel;
 class KeyboardEventFilter;
 class MixxxLibraryFeature;
+class NavidromeFeature;
 class PlayerManager;
 class PlaylistFeature;
 class RecordingManager;
@@ -73,6 +75,11 @@ class Library: public QObject {
                     KeyboardEventFilter* pKeyboard);
 
     void addFeature(LibraryFeature* feature);
+
+    /// Re-reads the Navidrome server url and credentials from the preferences
+    /// and rebuilds the remote library view. Called by the preferences dialog
+    /// after the settings have been applied.
+    void reloadNavidromeSettings();
 
     /// Needed for exposing models to QML
     LibraryTableModel* trackTableModel() const;
@@ -144,6 +151,11 @@ class Library: public QObject {
     void showTrackModel(QAbstractItemModel* model, bool restoreState = true);
     void switchToView(const QString& view);
     void loadTrack(TrackPointer pTrack);
+    /// Emitted for non-local (http/https) locations that are handed to a
+    /// player, e.g. by dropping a remote track onto a deck. The library
+    /// feature that owns the URL resolves it and calls
+    /// slotLoadLocationToPlayer() with the resulting local file.
+    void loadRemoteUrlToPlayer(const QUrl& url, const QString& group, bool play);
 #ifdef __STEM__
     void loadTrackToPlayer(TrackPointer pTrack,
             const QString& group,
@@ -203,6 +215,9 @@ class Library: public QObject {
     parented_ptr<CrateFeature> m_pCrateFeature;
     parented_ptr<BrowseFeature> m_pBrowseFeature;
     parented_ptr<AnalysisFeature> m_pAnalysisFeature;
+    /// Not owned here, the feature is owned by the QObject tree of this Library
+    /// (see addFeature()).
+    NavidromeFeature* m_pNavidromeFeature = nullptr;
     QFont m_trackTableFont;
     int m_iTrackTableRowHeight;
     bool m_editMetadataSelectedClick;

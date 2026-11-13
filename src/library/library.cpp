@@ -20,6 +20,7 @@
 #include "library/librarycontrol.h"
 #include "library/libraryfeature.h"
 #include "library/mixxxlibraryfeature.h"
+#include "library/navidrome/navidromefeature.h"
 #include "library/recording/recordingfeature.h"
 #include "library/rekordbox/rekordboxfeature.h"
 #include "library/rhythmbox/rhythmboxfeature.h"
@@ -179,6 +180,11 @@ Library::Library(
             &AnalysisFeature::trackProgress,
             this,
             &Library::onTrackAnalyzerProgress);
+
+    // Remote library provided by a Navidrome (Subsonic) server.
+    // Browsing only for now, playback still needs a local cache.
+    m_pNavidromeFeature = new NavidromeFeature(this, m_pConfig);
+    addFeature(m_pNavidromeFeature);
 
     // iTunes and Rhythmbox should be last until we no longer have an obnoxious
     // messagebox popup when you select them. (This forces you to reach for your
@@ -492,6 +498,12 @@ void Library::bindLibraryWidget(
     emit setSelectedClick(m_editMetadataSelectedClick);
 }
 
+void Library::reloadNavidromeSettings() {
+    if (m_pNavidromeFeature) {
+        m_pNavidromeFeature->reloadSettings();
+    }
+}
+
 void Library::addFeature(LibraryFeature* feature) {
     VERIFY_OR_DEBUG_ASSERT(feature) {
         return;
@@ -578,6 +590,15 @@ void Library::slotLoadTrack(TrackPointer pTrack) {
 }
 
 void Library::slotLoadLocationToPlayer(const QString& location, const QString& group, bool play) {
+    const QUrl locationUrl(location);
+    const QString scheme = locationUrl.scheme().toLower();
+    if (locationUrl.isValid() &&
+            (scheme == QLatin1String("http") || scheme == QLatin1String("https"))) {
+        // Remote streams are not supported by the audio engine, they need to
+        // be materialised locally by the feature that owns the URL first.
+        emit loadRemoteUrlToPlayer(locationUrl, group, play);
+        return;
+    }
     auto trackRef = TrackRef::fromFilePath(location);
     TrackPointer pTrack = m_pTrackCollectionManager->getOrAddTrack(trackRef);
     if (pTrack) {

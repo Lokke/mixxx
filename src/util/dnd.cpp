@@ -67,6 +67,24 @@ QList<mixxx::FileInfo> dropEventFiles(
             acceptPlaylists);
 }
 
+/// Whether the URL references a remote audio stream instead of a local file.
+///
+/// Such URLs are resolved after the drop by the library feature that owns
+/// them (e.g. "Navidrome"), which materialises the audio data locally.
+bool isRemoteAudioUrl(const QUrl& url) {
+    const QString scheme = url.scheme().toLower();
+    return scheme == QLatin1String("http") || scheme == QLatin1String("https");
+}
+
+QUrl firstRemoteAudioUrl(const QList<QUrl>& urls) {
+    for (const QUrl& url : urls) {
+        if (isRemoteAudioUrl(url)) {
+            return url;
+        }
+    }
+    return QUrl();
+}
+
 // Allow loading to a player if the player isn't playing
 // or the settings allow interrupting a playing player.
 bool allowLoadToPlayer(
@@ -246,6 +264,11 @@ bool DragAndDropHelper::dragEnterAccept(
         const QString& sourceIdentifier,
         bool stopOnFirstMatch,
         bool acceptPlaylists) {
+    // Remote audio streams have no local file to inspect, they are resolved
+    // by the owning library feature after the drop.
+    if (!firstRemoteAudioUrl(mimeData.urls()).isEmpty()) {
+        return !(mimeData.hasText() && mimeData.text() == sourceIdentifier);
+    }
     // TODO(XXX): This operation blocks the UI when many
     // files are selected!
     const auto files = dropEventFiles(
@@ -270,7 +293,14 @@ QDrag* DragAndDropHelper::dragTrackLocations(
         const QString& sourceIdentifier) {
     QList<QUrl> trackUrls;
     foreach (QString location, locations) {
-        trackUrls.append(mixxx::FileInfo(location).toQUrl());
+        const QUrl url(location);
+        if (isRemoteAudioUrl(url)) {
+            // Keep the stream URL intact, FileInfo::toQUrl() would turn it
+            // into a broken local file URL.
+            trackUrls.append(url);
+        } else {
+            trackUrls.append(mixxx::FileInfo(location).toQUrl());
+        }
     }
     return dragUrls(trackUrls, pDragSource, sourceIdentifier);
 }
@@ -301,6 +331,15 @@ void DragAndDropHelper::handleTrackDropEvent(
             target.emitCloneDeck(pEvent->mimeData()->text(), group);
             return;
         } else {
+            // A remote stream URL is passed through unchanged. The library
+            // feature that owns the URL downloads it and loads the resulting
+            // local file.
+            const QUrl remoteUrl = firstRemoteAudioUrl(pEvent->mimeData()->urls());
+            if (!remoteUrl.isEmpty()) {
+                pEvent->accept();
+                target.emitTrackDropped(remoteUrl.toString(), group);
+                return;
+            }
             const QList<mixxx::FileInfo> files = dropEventFiles(
                     *pEvent->mimeData(), group, true, false);
             if (!files.isEmpty()) {

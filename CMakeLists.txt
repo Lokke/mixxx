@@ -1459,6 +1459,11 @@ add_library(
   src/library/missing_hidden/hiddentablemodel.cpp
   src/library/missing_hidden/missingtablemodel.cpp
   src/library/mixxxlibraryfeature.cpp
+  src/library/navidrome/navidromecache.cpp
+  src/library/navidrome/navidromedownloader.cpp
+  src/library/navidrome/navidromefeature.cpp
+  src/library/navidrome/navidrometrackmodel.cpp
+  src/library/navidrome/subsonicclient.cpp
   src/library/overviewcache.cpp
   src/library/parser.cpp
   src/library/parsercsv.cpp
@@ -1567,6 +1572,7 @@ add_library(
   src/preferences/dialog/dlgpreflibrarydlg.ui
   src/preferences/dialog/dlgprefmixer.cpp
   src/preferences/dialog/dlgprefmixerdlg.ui
+  src/preferences/dialog/dlgprefnavidrome.cpp
   src/preferences/dialog/dlgprefrecord.cpp
   src/preferences/dialog/dlgprefrecorddlg.ui
   src/preferences/dialog/dlgprefreplaygain.cpp
