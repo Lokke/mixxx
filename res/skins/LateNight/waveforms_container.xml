@@ -3,6 +3,7 @@
   <WidgetGroup>
     <Layout>horizontal</Layout>
     <SizePolicy>me,min</SizePolicy>
+    <MaximumSize>,130</MaximumSize>
     <Children>
       <WidgetGroup>
         <ObjectName>WaveformsContainer</ObjectName>

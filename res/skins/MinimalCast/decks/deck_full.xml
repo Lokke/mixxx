@@ -1,0 +1,62 @@
+<Template>
+  <WidgetGroup>
+    <ObjectName>DeckContainer</ObjectName>
+    <Layout>horizontal</Layout>
+    <SizePolicy>me,min</SizePolicy>
+    <Children>
+
+      <WidgetGroup>
+        <ObjectName>Deck<Variable name="ChanNum"/></ObjectName>
+        <Layout>horizontal</Layout>
+        <SizePolicy>me,min</SizePolicy>
+        <Children>
+
+          <WidgetGroup>
+            <ObjectName>DeckRows12345</ObjectName>
+            <SizePolicy>me,min</SizePolicy>
+            <Layout>vertical</Layout>
+            <Children>
+
+              <WidgetGroup>
+                <ObjectName>DeckRows234</ObjectName>
+                <SizePolicy>me,min</SizePolicy>
+                <Layout>horizontal</Layout>
+                <Children>
+
+                  <WidgetGroup>
+                    <ObjectName>SpinnyCoverContainer_Big</ObjectName>
+                    <Layout>horizontal</Layout>
+                    <SizePolicy>f,f</SizePolicy>
+                    <Children>
+                      <SingletonContainer>
+                        <ObjectName>SpinnyCoverart<Variable name="ChanNum"/></ObjectName>
+                      </SingletonContainer>
+                    </Children>
+                    <Connection>
+                      <ConfigKey>[Skin],show_big_spinny_or_cover</ConfigKey>
+                      <BindProperty>visible</BindProperty>
+                    </Connection>
+                  </WidgetGroup><!-- SpinnyCoverContainer_Big -->
+
+                  <WidgetGroup>
+                    <SizePolicy>me,min</SizePolicy>
+                    <Layout>vertical</Layout>
+                    <Children>
+                      <Template src="skins:MinimalCast/decks/deck_header.xml" />
+                      <Template src="skins:MinimalCast/decks/row_4_overviewSpinny.xml" />
+                    </Children>
+                  </WidgetGroup>
+
+                </Children>
+              </WidgetGroup><!-- DeckRows234 -->
+
+              <Template src="skins:MinimalCast/decks/row_5_transport_minimal.xml" />
+
+            </Children>
+          </WidgetGroup><!-- DeckRows12345 -->
+
+        </Children>
+      </WidgetGroup><!-- DeckN -->
+    </Children>
+  </WidgetGroup>
+</Template>

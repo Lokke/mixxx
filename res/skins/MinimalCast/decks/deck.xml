@@ -1,0 +1,51 @@
+<Template>
+
+  <WidgetGroup>
+    <Layout>vertical</Layout>
+    <!-- compact deck height: header + slim waveform + transport row -->
+    <MaximumSize>,150</MaximumSize>
+    <Children>
+
+      <Template src="skins:MinimalCast/decks/deck_singletons.xml">
+        <SetVariable name="Type">deck</SetVariable>
+        <SetVariable name="Group">[Channel<Variable name="ChanNum"/>]</SetVariable>
+      </Template>
+
+      <WidgetStack currentpage="[Skin],show_mixer" persist="true">
+        <Children>
+
+          <!-- no mixer -->
+          <WidgetStack currentpage="[MinimalCast],deck_size_without_mixer" persist="true">
+            <Children>
+              <!-- Only the full deck is left in this stack, so whichever page
+                   the config keys select, the full deck is shown. The
+                   mini/compact variants are not used in this layout because
+                   the mixer is gone. -->
+              <!-- Full deck selected -->
+              <WidgetGroup trigger="[MinimalCast],show_full_deck">
+                <Layout>horizontal</Layout>
+                <Children>
+                  <SingletonContainer>
+                    <ObjectName>Deck<Variable name="ChanNum"/>_Full</ObjectName>
+                  </SingletonContainer>
+                </Children>
+              </WidgetGroup>
+            </Children>
+          </WidgetStack>
+
+          <!-- mixer shown = full deck -->
+          <WidgetGroup trigger="[Skin],show_mixer" on_hide_select="0">
+            <Layout>horizontal</Layout>
+            <Children>
+              <SingletonContainer>
+                <ObjectName>Deck<Variable name="ChanNum"/>_Full</ObjectName>
+              </SingletonContainer>
+            </Children>
+          </WidgetGroup>
+
+        </Children>
+      </WidgetStack>
+
+    </Children>
+  </WidgetGroup>
+</Template>
