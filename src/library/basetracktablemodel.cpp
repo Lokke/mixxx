@@ -313,7 +313,12 @@ void BaseTrackTableModel::copyTracks(const QModelIndexList& indices) const {
     Clipboard::start();
     for (const QModelIndex& index : indices) {
         if (index.isValid()) {
-            Clipboard::add(QUrl::fromLocalFile(getTrackLocation(index)));
+            // Prefer the URL over the local file location, models may refer
+            // to non-local (stream) sources.
+            const QUrl url = getTrackUrl(index);
+            if (url.isValid()) {
+                Clipboard::add(url);
+            }
         }
     }
     Clipboard::finish();

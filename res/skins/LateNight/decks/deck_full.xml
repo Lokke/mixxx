@@ -17,8 +17,6 @@
             <Layout>vertical</Layout>
             <Children>
 
-              <Template src="skins:LateNight/decks/row_1_keyVinylFx.xml"/>
-
               <WidgetGroup>
                 <ObjectName>DeckRows234</ObjectName>
                 <SizePolicy>me,min</SizePolicy>
@@ -44,7 +42,8 @@
                     <SizePolicy>me,min</SizePolicy>
                     <Layout>vertical</Layout>
                     <Children>
-                      <Template src="skins:LateNight/decks/row_2_3_TitleArtistTime.xml" />
+                      <!-- Title/artist is shown in the transport row now, so
+                           the whole row above the overview waveform is gone. -->
                       <Template src="skins:LateNight/decks/row_4_overviewSpinny.xml" />
                     </Children>
                   </WidgetGroup>
@@ -52,24 +51,11 @@
                 </Children>
               </WidgetGroup><!-- DeckRows234 -->
 
-              <Template src="skins:LateNight/decks/row_5_transportLoopJump.xml" />
+              <Template src="skins:LateNight/decks/row_5_transport_minimal.xml" />
 
             </Children>
           </WidgetGroup><!-- DeckRows12345 -->
 
-          <WidgetGroup>
-            <ObjectName>DeckRateSpacer</ObjectName>
-            <SizePolicy>min,min</SizePolicy>
-            <Children/>
-            <!-- this is sized and styled in css -->
-            <Connection>
-              <ConfigKey persist="true">[Skin],show_rate_controls</ConfigKey>
-              <Transform><Not/></Transform>
-              <BindProperty>visible</BindProperty>
-            </Connection>
-          </WidgetGroup>
-
-          <Template src="skins:LateNight/decks/rate_controls.xml"/>
         </Children>
       </WidgetGroup><!-- DeckN -->
     </Children>

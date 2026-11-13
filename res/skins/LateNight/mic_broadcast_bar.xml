@@ -1,0 +1,173 @@
+<!--
+  Broadcast rack — center column between the decks.
+
+  Layout follows the "AirMaster" mockup:
+    ON AIR          full width broadcast toggle
+    REC             record toggle + recording duration
+    MIKROFON        big round talkover button + mic level + ducking amount
+
+  Button frames are the regular LateNight button backgrounds, the state
+  colors (active / connecting / failure) are provided by the #BarMicTalk,
+  #BarRecButton and #BarBroadcastButton rules in style_classic.qss and
+  style_palemoon.qss.
+-->
+<Template>
+  <!-- Use the same button style as the toolbar (and the mixer) buttons. -->
+  <SetVariable name="BtnType"><Variable name="TopRegion_BtnType"/></SetVariable>
+  <SetVariable name="BtnSize">medium</SetVariable>
+
+  <WidgetGroup>
+    <ObjectName>MicBroadcastBar</ObjectName>
+    <Layout>horizontal</Layout>
+    <SizePolicy>max,me</SizePolicy>
+    <Children>
+
+      <WidgetGroup><!-- the rack -->
+        <ObjectName>MicBroadcastRack</ObjectName>
+        <Layout>vertical</Layout>
+        <SizePolicy>max,me</SizePolicy>
+        <MinimumSize>150,0</MinimumSize>
+        <MaximumSize>150,</MaximumSize>
+        <Children>
+
+          <Template src="skins:LateNight/controls/button_5state_display.xml">
+            <SetVariable name="ObjectName">BarBroadcastButton</SetVariable>
+            <SetVariable name="TooltipId">broadcast_enabled</SetVariable>
+            <SetVariable name="Size">148f,24f</SetVariable>
+            <SetVariable name="state_0_text">ON AIR</SetVariable>
+            <SetVariable name="state_1_text">...</SetVariable>
+            <SetVariable name="state_2_text">ON AIR</SetVariable>
+            <SetVariable name="state_3_text">ERROR</SetVariable>
+            <SetVariable name="state_4_text">ERROR</SetVariable>
+            <SetVariable name="ConfigKey">[Shoutcast],enabled</SetVariable>
+            <SetVariable name="ConfigKeyDisp">[Shoutcast],status</SetVariable>
+          </Template>
+
+          <WidgetGroup><Size>0min,3f</Size></WidgetGroup>
+
+          <WidgetGroup><!-- REC toggle + recording duration -->
+            <ObjectName>MicBroadcastRecRow</ObjectName>
+            <Layout>horizontal</Layout>
+            <SizePolicy>me,min</SizePolicy>
+            <Children>
+
+              <Template src="skins:LateNight/controls/button_3state_display.xml">
+                <SetVariable name="ObjectName">BarRecButton</SetVariable>
+                <SetVariable name="TooltipId">toggle_recording</SetVariable>
+                <SetVariable name="Size">54f,24f</SetVariable>
+                <SetVariable name="state_0_text">REC</SetVariable>
+                <SetVariable name="state_1_text">REC</SetVariable>
+                <SetVariable name="state_2_text">STOP</SetVariable>
+                <SetVariable name="ConfigKey">[Recording],toggle_recording</SetVariable>
+                <SetVariable name="ConfigKeyDisp">[Recording],status</SetVariable>
+              </Template>
+
+              <WidgetGroup><Size>3f,0min</Size></WidgetGroup>
+
+              <RecordingDuration>
+                <ObjectName>BarRecDuration</ObjectName>
+                <TooltipId>recording_duration</TooltipId>
+                <Size>me,24f</Size>
+                <InactiveText>--:--:--</InactiveText>
+                <Alignment>center</Alignment>
+                <Connection>
+                  <ConfigKey>[Recording],status</ConfigKey>
+                  <BindProperty>highlight</BindProperty>
+                </Connection>
+              </RecordingDuration>
+
+            </Children>
+          </WidgetGroup><!-- /REC toggle + recording duration -->
+
+          <WidgetGroup><Size>0min,0me</Size></WidgetGroup><!-- spacer -->
+
+          <WidgetGroup><!-- microphone block -->
+            <ObjectName>MicBroadcastMicBlock</ObjectName>
+            <Layout>vertical</Layout>
+            <SizePolicy>me,min</SizePolicy>
+            <Children>
+
+              <Label>
+                <ObjectName>MicBroadcastLabel</ObjectName>
+                <Size>me,12f</Size>
+                <Text>MIKROFON</Text>
+                <Alignment>center</Alignment>
+              </Label>
+
+              <WidgetGroup><!-- round talkover button, centered -->
+                <Layout>horizontal</Layout>
+                <SizePolicy>me,min</SizePolicy>
+                <Children>
+                  <WidgetGroup><Size>me,0min</Size></WidgetGroup>
+                  <Template src="skins:LateNight/controls/button_2state_mic_round.xml">
+                    <SetVariable name="TooltipId">microphone_talkover</SetVariable>
+                    <SetVariable name="ObjectName">BarMicTalk</SetVariable>
+                    <SetVariable name="Size">46f,46f</SetVariable>
+                    <SetVariable name="ConfigKey">[Microphone1],talkover</SetVariable>
+                  </Template>
+                  <WidgetGroup><Size>me,0min</Size></WidgetGroup>
+                </Children>
+              </WidgetGroup><!-- /round talkover button -->
+
+              <WidgetGroup><Size>0min,3f</Size></WidgetGroup>
+
+              <VuMeter>
+                <TooltipId>microphone_VuMeter</TooltipId>
+                <Size>me,6f</Size>
+                <PathBack>skins:LateNight/<Variable name="StyleScheme"/>/style/vu_micaux_level_bg_.png</PathBack>
+                <PathVu>skins:LateNight/<Variable name="StyleScheme"/>/style/vu_micaux_level_active.png</PathVu>
+                <Horizontal>true</Horizontal>
+                <PeakHoldSize>0</PeakHoldSize>
+                <PeakHoldTime>0</PeakHoldTime>
+                <PeakFallTime>1</PeakFallTime>
+                <PeakFallStep>1</PeakFallStep>
+                <Connection>
+                  <ConfigKey>[Microphone1],vu_meter</ConfigKey>
+                </Connection>
+              </VuMeter>
+
+              <WidgetGroup><Size>0min,4f</Size></WidgetGroup>
+
+              <WidgetGroup><!-- ducking amount, centered -->
+                <Layout>horizontal</Layout>
+                <SizePolicy>me,min</SizePolicy>
+                <Children>
+                  <WidgetGroup><Size>me,0min</Size></WidgetGroup>
+                  <WidgetGroup>
+                    <Layout>vertical</Layout>
+                    <SizePolicy>min,min</SizePolicy>
+                    <Children>
+                      <Template src="skins:LateNight/controls/knob.xml">
+                        <SetVariable name="TooltipId">talkover_duck_strength</SetVariable>
+                        <SetVariable name="Size">32f,26f</SetVariable>
+                        <SetVariable name="KnobBg">regular</SetVariable>
+                        <SetVariable name="KnobIndicator">regular</SetVariable>
+                        <SetVariable name="KnobColor">red</SetVariable>
+                        <SetVariable name="ArcColor"><Variable name="ArcColorFxMix"/></SetVariable>
+                        <SetVariable name="ArcReversed">true</SetVariable>
+                        <SetVariable name="Group">[Master]</SetVariable>
+                        <SetVariable name="Control">duckStrength</SetVariable>
+                      </Template>
+                      <Label>
+                        <ObjectName>MicBroadcastLabel</ObjectName>
+                        <Size>me,11f</Size>
+                        <Text>DUCK</Text>
+                        <Alignment>center</Alignment>
+                      </Label>
+                    </Children>
+                  </WidgetGroup>
+                  <WidgetGroup><Size>me,0min</Size></WidgetGroup>
+                </Children>
+              </WidgetGroup><!-- /ducking amount -->
+
+            </Children>
+          </WidgetGroup><!-- /microphone block -->
+
+          <WidgetGroup><Size>0min,0me</Size></WidgetGroup><!-- spacer -->
+
+        </Children>
+      </WidgetGroup><!-- /rack -->
+
+    </Children>
+  </WidgetGroup>
+</Template>

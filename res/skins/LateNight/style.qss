@@ -50,6 +50,8 @@ WLabel#MicAuxLabel, WLabel#MicAuxLabelUnconfigured,
 WPushButton#GuiToggleButton,
 WLabel#RecFeedback, WLabel#RecDuration,
 WPushButton#BroadcastButton,
+WPushButton#BarMicTalk, WPushButton#BarRecButton,
+WPushButton#BarBroadcastButton,
 WPushButton#SkinSettingsToggle,
 #LibraryFeatureControls QPushButton,
 /* Passthrough label on overview waveform */
@@ -72,6 +74,7 @@ QLabel#labelRecFilename {
 #GuiToggleButton,
 #RecFeedback, #RecDuration,
 #BroadcastButton,
+#BarMicTalk, #BarRecButton, #BarBroadcastButton,
 #SkinSettingsToggle,
 #LibraryFeatureControls QPushButton {
   text-transform: uppercase;
@@ -287,6 +290,15 @@ WRecordingDuration {
 #ArtistText,
 #TitleText {
   font-size: 18px;
+}
+
+/* compact title/artist in the deck transport row */
+#DeckTitleCompact {
+  font-size: 13px;
+  font-weight: bold;
+}
+#DeckArtistCompact {
+  font-size: 11px;
 }
 
 #PlayPositionTextSmall,

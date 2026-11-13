@@ -17,6 +17,7 @@
 #include "library/trackcollectionmanager.h"
 #include "moc_dlgpreferences.cpp"
 #include "preferences/dialog/dlgpreflibrary.h"
+#include "preferences/dialog/dlgprefnavidrome.h"
 #include "preferences/dialog/dlgprefsound.h"
 #include "util/color/color.h"
 #include "util/desktophelper.h"
@@ -121,6 +122,12 @@ DlgPreferences::DlgPreferences(
     addPageWidget(PreferencesPage(plibraryPage,
                           new QTreeWidgetItem(contentsTreeWidget, QTreeWidgetItem::Type)),
             tr("Library"),
+            "ic_preferences_library.svg");
+
+    addPageWidget(PreferencesPage(
+                          new DlgPrefNavidrome(this, m_pConfig, pLibrary.get()),
+                          new QTreeWidgetItem(contentsTreeWidget, QTreeWidgetItem::Type)),
+            tr("Navidrome"),
             "ic_preferences_library.svg");
 
     QTreeWidgetItem* pControllerRootItem =

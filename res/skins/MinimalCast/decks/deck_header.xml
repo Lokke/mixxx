@@ -1,0 +1,91 @@
+<!--
+  Deck header, following the "MinimalCast" mockup:
+      [ DECK 1 ]  124.00        01:42 / 03:20
+      Titel (bold, white)   • Interpret (dimmed)
+
+  Everything is fed by the deck's group, so the template works for
+  all four decks.
+-->
+<Template>
+  <!-- row 1: deck badge + BPM + position -->
+  <WidgetGroup>
+    <ObjectName>DeckHeaderTop</ObjectName>
+    <Layout>horizontal</Layout>
+    <SizePolicy>me,min</SizePolicy>
+    <Children>
+
+      <Label>
+        <ObjectName>DeckBadge</ObjectName>
+        <Size>44f,14f</Size>
+        <Text>DECK <Variable name="ChanNum"/></Text>
+        <Alignment>center</Alignment>
+      </Label>
+
+      <WidgetGroup><Size>6f,0min</Size></WidgetGroup>
+
+      <Number>
+        <ObjectName>DeckBpmText</ObjectName>
+        <TooltipId>visual_bpm</TooltipId>
+        <Size>56f,14f</Size>
+        <Alignment>left</Alignment>
+        <NumberOfDigits>2</NumberOfDigits>
+        <Connection>
+          <ConfigKey><Variable name="Group"/>,visual_bpm</ConfigKey>
+        </Connection>
+      </Number>
+
+      <WidgetGroup><Size>me,0min</Size></WidgetGroup>
+
+      <NumberPos>
+        <ObjectName>DeckPositionText</ObjectName>
+        <TooltipId>track_time</TooltipId>
+        <Size>0min,14f</Size>
+        <Alignment>right</Alignment>
+        <Channel><Variable name="ChanNum"/></Channel>
+        <Connection>
+          <ConfigKey><Variable name="Group"/>,playposition</ConfigKey>
+        </Connection>
+      </NumberPos>
+
+    </Children>
+  </WidgetGroup><!-- /row 1 -->
+
+  <!-- row 2: title + artist -->
+  <WidgetGroup>
+    <ObjectName>DeckHeaderBottom</ObjectName>
+    <Layout>horizontal</Layout>
+    <SizePolicy>me,min</SizePolicy>
+    <Children>
+
+      <TrackProperty>
+        <ObjectName>DeckTitleHeading</ObjectName>
+        <Size>me,15f</Size>
+        <TooltipId>track_title</TooltipId>
+        <Property>title</Property>
+        <Alignment>Left</Alignment>
+        <Elide>right</Elide>
+        <Channel><Variable name="ChanNum"/></Channel>
+        <Connection>
+          <ConfigKey><Variable name="Group"/>,track_loaded</ConfigKey>
+          <BindProperty>highlight</BindProperty>
+        </Connection>
+      </TrackProperty>
+
+      <TrackProperty>
+        <ObjectName>DeckArtistHeading</ObjectName>
+        <Size>0min,15f</Size>
+        <TooltipId>track_artist</TooltipId>
+        <Property>artist</Property>
+        <Alignment>Right</Alignment>
+        <Elide>right</Elide>
+        <MinimumSize>80,</MinimumSize>
+        <Channel><Variable name="ChanNum"/></Channel>
+        <Connection>
+          <ConfigKey><Variable name="Group"/>,track_loaded</ConfigKey>
+          <BindProperty>highlight</BindProperty>
+        </Connection>
+      </TrackProperty>
+
+    </Children>
+  </WidgetGroup><!-- /row 2 -->
+</Template>
