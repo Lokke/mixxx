@@ -56,6 +56,10 @@ class SoundSourceProviderRegistry {
     QList<SoundSourceProviderRegistration> getRegistrationsForFileType(
             const QString& fileType) const;
 
+    /// Returns the (unique) registrations of all providers that are able to
+    /// decode remote streams, e.g. http/https URLs without a local file.
+    QList<SoundSourceProviderRegistration> getRegistrationsForRemoteUrls() const;
+
     /// Returns the primary provider registration for the given file
     /// types if available.
     std::optional<SoundSourceProviderRegistration> getPrimaryRegistrationForFileType(

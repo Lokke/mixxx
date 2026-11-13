@@ -58,6 +58,40 @@ constexpr int kFirstAudioStream = -1;
 
 const Logger kLogger("SoundSourceFFmpeg");
 
+/// Forwards the messages of libav* to the Mixxx log. This is required to
+/// diagnose problems with network streams (HTTP status codes, seek errors,
+/// unsupported protocols, ...) that libav* only reports through av_log().
+void logFFmpegMessage(
+        void* pAvClass,
+        int level,
+        const char* pFormat,
+        va_list args) {
+    if (level > av_log_get_level()) {
+        return;
+    }
+    char buffer[1024];
+    int printPrefix = 1;
+    av_log_format_line2(pAvClass, level, pFormat, args, buffer, sizeof(buffer), &printPrefix);
+    const QString message = QString::fromUtf8(buffer).trimmed();
+    if (message.isEmpty()) {
+        return;
+    }
+    if (level <= AV_LOG_ERROR) {
+        kLogger.warning().noquote() << "libav:" << message;
+    } else {
+        kLogger.debug().noquote() << "libav:" << message;
+    }
+}
+
+bool installFFmpegLogForwarding() {
+    av_log_set_level(AV_LOG_WARNING);
+    av_log_set_callback(&logFFmpegMessage);
+    return true;
+}
+
+const bool s_ffmpegLogForwardingInstalled = installFFmpegLogForwarding();
+
+
 int64_t getStreamStartTime(const AVStream& avStream) {
     int64_t start_time = avStream.start_time;
     if (start_time == AV_NOPTS_VALUE) {
@@ -571,18 +605,28 @@ SoundSourceFFmpeg::~SoundSourceFFmpeg() {
 SoundSource::OpenResult SoundSourceFFmpeg::tryOpen(
         OpenMode /*mode*/,
         const OpenParams& params) {
-    // Open input
+    // Open input. Remote streams (http/https) are passed to FFmpeg as URL,
+    // local files as plain file name.
+    const QString inputLocation = getLocalFileName().isEmpty()
+            ? getUrl().toString()
+            : getLocalFileName();
     {
         AVFormatContext* pavInputFormatContext =
-                openInputFile(getLocalFileName());
+                openInputFile(inputLocation);
         if (pavInputFormatContext == nullptr) {
             kLogger.warning()
                     << "Failed to open input file"
-                    << getLocalFileName();
+                    << inputLocation;
             return OpenResult::Failed;
         }
         m_pavInputFormatContext.take(&pavInputFormatContext);
     }
+    kLogger.debug()
+            << "Opened input" << inputLocation
+            << "seekable:" << (m_pavInputFormatContext->pb != nullptr &&
+                                      m_pavInputFormatContext->pb->seekable)
+            << "seek-supported:" << (m_pavInputFormatContext->pb != nullptr &&
+                                            m_pavInputFormatContext->pb->seek != nullptr);
 #if VERBOSE_DEBUG_LOG
     kLogger.debug()
             << "AVFormatContext"
@@ -1088,7 +1132,8 @@ bool SoundSourceFFmpeg::adjustCurrentPosition(SINT startIndex) {
 
     // Seek to new position
     const int64_t seekTimestamp =
-            convertFrameIndexToStreamTime(*m_pavStream, seekIndex);
+            std::max(convertFrameIndexToStreamTime(*m_pavStream, seekIndex),
+                    getStreamStartTime(*m_pavStream));
     int av_seek_frame_result = av_seek_frame(
             m_pavInputFormatContext,
             m_pavStream->index,

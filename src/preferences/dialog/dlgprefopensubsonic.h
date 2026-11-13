@@ -12,18 +12,18 @@ class Library;
 class QGroupBox;
 class QFormLayout;
 
-/// Preferences page for the Navidrome (Subsonic / OpenSubsonic) backend.
+/// Preferences page for the OpenSubsonic (Subsonic / OpenSubsonic) backend.
 ///
 /// The credentials are stored in the Mixxx configuration file
-/// (mixxx.cfg, section [Navidrome]) and are picked up by the library
+/// (mixxx.cfg, section [OpenSubsonic]) and are picked up by the library
 /// feature immediately after "Apply".
-class DlgPrefNavidrome : public DlgPreferencePage {
+class DlgPrefOpenSubsonic : public DlgPreferencePage {
     Q_OBJECT
   public:
-    DlgPrefNavidrome(QWidget* pParent,
+    DlgPrefOpenSubsonic(QWidget* pParent,
             UserSettingsPointer pConfig,
             Library* pLibrary);
-    ~DlgPrefNavidrome() override = default;
+    ~DlgPrefOpenSubsonic() override = default;
 
     QUrl helpUrl() const override;
 

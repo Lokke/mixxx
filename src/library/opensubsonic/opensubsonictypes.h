@@ -5,7 +5,7 @@
 #include <QStringList>
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
 /// Subset of the Subsonic "ArtistID3" entity that is relevant for browsing.
 struct Artist final {
@@ -105,5 +105,5 @@ struct Song final {
     }
 };
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx

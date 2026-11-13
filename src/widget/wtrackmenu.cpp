@@ -779,7 +779,8 @@ void WTrackMenu::setupActions() {
         addAction(m_pRemoveFromDiskAct);
     }
 
-    if (featureIsEnabled(Feature::FileBrowser)) {
+    if (featureIsEnabled(Feature::FileBrowser) &&
+            !hasRemoteTrackRef()) {
         addAction(m_pFileBrowserAct);
     }
 
@@ -1397,6 +1398,18 @@ const QModelIndexList& WTrackMenu::getTrackIndices() const {
     // if a TrackModel is available.
     DEBUG_ASSERT(m_pTrackModel);
     return m_trackIndexList;
+}
+
+bool WTrackMenu::hasRemoteTrackRef() const {
+    const auto trackRefs = getTrackRefs();
+    for (const auto& trackRef : trackRefs) {
+        const QString location = trackRef.getLocation();
+        if (location.startsWith(QLatin1String("http://"), Qt::CaseInsensitive) ||
+                location.startsWith(QLatin1String("https://"), Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void WTrackMenu::slotOpenInFileBrowser() {

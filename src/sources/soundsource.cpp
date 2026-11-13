@@ -13,9 +13,19 @@ namespace {
 
 const Logger kLogger("SoundSource");
 
+/**
+  Accepts local files and remote http(s) URLs. Remote streams are decoded by
+  the FFmpeg based sound source, everything else still requires a local file.
+*/
+inline bool isSupportedSourceUrl(const QUrl& url) {
+    return url.isLocalFile() ||
+            url.scheme() == QLatin1String("http") ||
+            url.scheme() == QLatin1String("https");
+}
+
 inline QUrl validateLocalFileUrl(QUrl url) {
     DEBUG_ASSERT(url.isValid());
-    VERIFY_OR_DEBUG_ASSERT(url.isLocalFile()) {
+    VERIFY_OR_DEBUG_ASSERT(isSupportedSourceUrl(url)) {
         kLogger.warning()
                 << "Unsupported URL:"
                 << url.toString();
@@ -27,6 +37,11 @@ inline QUrl validateLocalFileUrl(QUrl url) {
 
 //static
 QString SoundSource::getTypeFromUrl(const QUrl& url) {
+    if (!url.isLocalFile()) {
+        // Remote streams: the type is detected while decoding, no suffix is
+        // available from the URL.
+        return {};
+    }
     const QString filePath = validateLocalFileUrl(url).toLocalFile();
     return getTypeFromFile(QFileInfo(filePath));
 }
@@ -99,7 +114,11 @@ QString SoundSource::getTypeFromFile(const QFileInfo& fileInfo) {
 
 SoundSource::SoundSource(const QUrl& url, const QString& type)
         : AudioSource(validateLocalFileUrl(url)),
-          MetadataSourceTagLib(getLocalFileName(), type),
+          // Remote streams carry no tags, their metadata is provided by the
+          // library feature that created the track.
+          MetadataSourceTagLib(
+                  url.isLocalFile() ? url.toLocalFile() : QString(),
+                  type),
           m_type(type) {
 }
 

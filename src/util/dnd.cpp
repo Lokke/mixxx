@@ -70,7 +70,7 @@ QList<mixxx::FileInfo> dropEventFiles(
 /// Whether the URL references a remote audio stream instead of a local file.
 ///
 /// Such URLs are resolved after the drop by the library feature that owns
-/// them (e.g. "Navidrome"), which materialises the audio data locally.
+/// them (e.g. "OpenSubsonic"), which materialises the audio data locally.
 bool isRemoteAudioUrl(const QUrl& url) {
     const QString scheme = url.scheme().toLower();
     return scheme == QLatin1String("http") || scheme == QLatin1String("https");

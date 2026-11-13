@@ -26,7 +26,7 @@ class LibraryFeature;
 class LibraryTableModel;
 class KeyboardEventFilter;
 class MixxxLibraryFeature;
-class NavidromeFeature;
+class OpenSubsonicFeature;
 class PlayerManager;
 class PlaylistFeature;
 class RecordingManager;
@@ -76,10 +76,10 @@ class Library: public QObject {
 
     void addFeature(LibraryFeature* feature);
 
-    /// Re-reads the Navidrome server url and credentials from the preferences
+    /// Re-reads the OpenSubsonic server url and credentials from the preferences
     /// and rebuilds the remote library view. Called by the preferences dialog
     /// after the settings have been applied.
-    void reloadNavidromeSettings();
+    void reloadOpenSubsonicSettings();
 
     /// Needed for exposing models to QML
     LibraryTableModel* trackTableModel() const;
@@ -217,7 +217,7 @@ class Library: public QObject {
     parented_ptr<AnalysisFeature> m_pAnalysisFeature;
     /// Not owned here, the feature is owned by the QObject tree of this Library
     /// (see addFeature()).
-    NavidromeFeature* m_pNavidromeFeature = nullptr;
+    OpenSubsonicFeature* m_pOpenSubsonicFeature = nullptr;
     QFont m_trackTableFont;
     int m_iTrackTableRowHeight;
     bool m_editMetadataSelectedClick;

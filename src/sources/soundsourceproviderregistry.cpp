@@ -1,5 +1,8 @@
 #include "sources/soundsourceproviderregistry.h"
 
+#include <QSet>
+#include <algorithm>
+
 #include "util/logger.h"
 #include "util/make_const_iterator.h"
 
@@ -107,6 +110,38 @@ SoundSourceProviderRegistry::getRegistrationsForFileType(
                 << fileType;
         return QList<SoundSourceProviderRegistration>();
     }
+}
+
+QList<SoundSourceProviderRegistration>
+SoundSourceProviderRegistry::getRegistrationsForRemoteUrls() const {
+    // A provider may be registered for many file types, so collect the
+    // registrations of all matching providers only once.
+    QList<SoundSourceProviderRegistration> registrations;
+    QSet<SoundSourceProvider*> alreadyAdded;
+    for (const auto& registrationList : m_registrationListsByFileType) {
+        for (const auto& registration : registrationList) {
+            if (!registration.getProvider()->supportsRemoteUrls()) {
+                continue;
+            }
+            SoundSourceProvider* pProvider = registration.getProvider().get();
+            if (alreadyAdded.contains(pProvider)) {
+                continue;
+            }
+            alreadyAdded.insert(pProvider);
+            registrations.append(registration);
+        }
+    }
+    // Prefer the provider with the highest priority, e.g. FFmpeg over others.
+    std::sort(registrations.begin(),
+            registrations.end(),
+            [](const SoundSourceProviderRegistration& lhs,
+                    const SoundSourceProviderRegistration& rhs) {
+                return lhs.getProviderPriority() > rhs.getProviderPriority();
+            });
+    if (registrations.isEmpty()) {
+        kLogger.warning() << "No provider(s) registered for remote URLs";
+    }
+    return registrations;
 }
 
 } // namespace mixxx

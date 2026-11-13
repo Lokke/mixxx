@@ -2,16 +2,35 @@
 
 #include <QString>
 
-#include "library/navidrome/navidrometypes.h"
+#include "library/opensubsonic/opensubsonictypes.h"
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
-/// Root directory of the local Navidrome cache.
+/// Root directory of the volatile OpenSubsonic audio buffer.
 ///
-/// Downloaded audio files are stored here so that they can be handed to the
-/// regular Mixxx track loading pipeline, which only accepts local files.
+/// The Mixxx audio pipeline only accepts local files, so streamed audio data
+/// has to be materialised as a file. This directory is deliberately located
+/// on a RAM backed filesystem (the per user runtime directory / tmpfs) and is
+/// scoped to a single application run, so the audio data is never written to
+/// persistent storage and does not survive a restart of Mixxx.
 QString cacheRootPath();
+
+/// Creates the buffer directory of the current run (mode 0700) and removes
+/// leftovers of previous runs that did not shut down cleanly. Must be called
+/// before the first song is requested.
+void prepareSessionCache();
+
+/// Removes the buffer directory of the current run including all audio data
+/// that is still buffered.
+void purgeSessionCache();
+
+/// Creates the buffer directory of the current run if it does not exist yet.
+/// Returns false if the directory is not available.
+bool ensureSessionCacheDirectory();
+
+/// Whether the given file is part of the buffer directory of this run.
+bool isSessionCacheFile(const QString& path);
 
 /// Local (not necessarily existing) file path for the given song.
 ///
@@ -19,5 +38,5 @@ QString cacheRootPath();
 /// Mixxx determines the decoder from the file name extension.
 QString cachedSongFilePath(const Song& song);
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx

@@ -111,6 +111,13 @@ bool StemInfoImporter::hasStemAtom(const QString& filePath) {
 // static
 bool StemInfoImporter::maybeStemFile(
         const QString& fileName, QMimeType mimeType) {
+    if (fileName.startsWith(QLatin1String("http://"), Qt::CaseInsensitive) ||
+            fileName.startsWith(QLatin1String("https://"), Qt::CaseInsensitive)) {
+        // Remote streams (e.g. from the OpenSubsonic library) are never
+        // stem files and their content must not be read into memory
+        // for detection.
+        return false;
+    }
     if (!mimeType.isValid() || mimeType.isDefault()) {
         // If no MIME type was previously detected for the file content, we read it now.
         mimeType = QMimeDatabase().mimeTypeForFile(

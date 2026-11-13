@@ -344,10 +344,14 @@ void AnalyzerWaveform::storeResults(TrackPointer pTrack) {
     // waveforms (i.e. if the config setting was disabled in a previous scan)
     // and then it is not called. The other analyzers have signals which control
     // the update of their data.
-    m_analysisDao.saveTrackAnalyses(
-            pTrack->getId(),
-            m_waveform,
-            m_waveformSummary);
+    // Tracks without an id (e.g. temporary tracks for streamed audio) are not
+    // part of the library and their analysis must not be persisted.
+    if (pTrack->getId().isValid()) {
+        m_analysisDao.saveTrackAnalyses(
+                pTrack->getId(),
+                m_waveform,
+                m_waveformSummary);
+    }
 
     // Set waveforms on track AFTER they'been written to disk in order to have
     // a consistency when OverviewCache asks AnalysisDAO for a waveform summary.

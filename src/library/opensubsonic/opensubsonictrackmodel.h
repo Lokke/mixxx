@@ -6,36 +6,36 @@
 #include <QVector>
 
 #include "library/basetracktablemodel.h"
-#include "library/navidrome/navidrometypes.h"
+#include "library/opensubsonic/opensubsonictypes.h"
 
 namespace mixxx {
-namespace navidrome {
-class NavidromeDownloader;
+namespace opensubsonic {
+class OpenSubsonicDownloader;
 class SubsonicClient;
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx
 
-/// Read-only track table model for songs of a remote Navidrome server.
+/// Read-only track table model for songs of a remote OpenSubsonic server.
 ///
 /// The model does not import anything into the Mixxx database. It creates
 /// temporary Track objects on demand, which is exactly what
 /// BaseTrackTableModel has been designed for.
-class NavidromeTrackModel : public BaseTrackTableModel {
+class OpenSubsonicTrackModel : public BaseTrackTableModel {
     Q_OBJECT
 
   public:
-    NavidromeTrackModel(QObject* parent,
+    OpenSubsonicTrackModel(QObject* parent,
             TrackCollectionManager* pTrackCollectionManager,
-            const mixxx::navidrome::SubsonicClient* pClient,
-            mixxx::navidrome::NavidromeDownloader* pDownloader);
-    ~NavidromeTrackModel() override = default;
+            const mixxx::opensubsonic::SubsonicClient* pClient,
+            mixxx::opensubsonic::OpenSubsonicDownloader* pDownloader);
+    ~OpenSubsonicTrackModel() override = default;
 
     /// Songs of the selected album. Also leaves search mode.
-    void setAlbumSongs(QList<mixxx::navidrome::Song> songs);
+    void setAlbumSongs(QList<mixxx::opensubsonic::Song> songs);
     /// Shows the result of a server side search. Ignored if the query does
     /// not match the current search text anymore (outdated reply).
     void setSearchResults(const QString& query,
-            const QList<mixxx::navidrome::Song>& songs);
+            const QList<mixxx::opensubsonic::Song>& songs);
     /// Leaves search mode and restores the songs of the selected album.
     void clearSearch();
     void clearSongs();
@@ -77,19 +77,19 @@ class NavidromeTrackModel : public BaseTrackTableModel {
 
   private:
     static QVariant fieldValue(
-            const mixxx::navidrome::Song& song,
+            const mixxx::opensubsonic::Song& song,
             ColumnCache::Column column);
     bool updateSongRating(const QString& songId, int rating);
     void rebuildVisibleSongs();
 
-    const mixxx::navidrome::SubsonicClient* const m_pClient;
-    mixxx::navidrome::NavidromeDownloader* const m_pDownloader;
+    const mixxx::opensubsonic::SubsonicClient* const m_pClient;
+    mixxx::opensubsonic::OpenSubsonicDownloader* const m_pDownloader;
 
     /// Songs of the currently selected album.
-    QList<mixxx::navidrome::Song> m_albumSongs;
+    QList<mixxx::opensubsonic::Song> m_albumSongs;
     /// Songs that are currently displayed (album songs or search results).
-    QList<mixxx::navidrome::Song> m_allSongs;
-    QList<mixxx::navidrome::Song> m_visibleSongs;
+    QList<mixxx::opensubsonic::Song> m_allSongs;
+    QList<mixxx::opensubsonic::Song> m_visibleSongs;
     mutable QHash<int, TrackPointer> m_trackCache;
 
     QString m_searchText;

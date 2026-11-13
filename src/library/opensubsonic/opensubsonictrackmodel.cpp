@@ -1,4 +1,4 @@
-#include "library/navidrome/navidrometrackmodel.h"
+#include "library/opensubsonic/opensubsonictrackmodel.h"
 
 #include <QFileInfo>
 #include <QStringList>
@@ -7,9 +7,9 @@
 #include <utility>
 
 #include "library/dao/trackschema.h"
-#include "library/navidrome/navidromecache.h"
-#include "library/navidrome/navidromedownloader.h"
-#include "library/navidrome/subsonicclient.h"
+#include "library/opensubsonic/opensubsoniccache.h"
+#include "library/opensubsonic/opensubsonicdownloader.h"
+#include "library/opensubsonic/subsonicclient.h"
 #include "library/starrating.h"
 #include "track/bpm.h"
 #include "track/track.h"
@@ -19,12 +19,12 @@
 
 namespace {
 
-using mixxx::navidrome::Song;
+using mixxx::opensubsonic::Song;
 
 /// All columns that this model provides. The names must match the column
 /// names used by the Mixxx library table so that the generic column
 /// machinery of BaseTrackTableModel can be reused.
-QStringList navidromeTableColumns() {
+QStringList opensubsonicTableColumns() {
     return {
             LIBRARYTABLE_ID,
             LIBRARYTABLE_ARTIST,
@@ -110,19 +110,19 @@ const QHash<ColumnCache::Column, TrackModel::SortColumnId>& sortColumnIdMap() {
 
 } // namespace
 
-NavidromeTrackModel::NavidromeTrackModel(
+OpenSubsonicTrackModel::OpenSubsonicTrackModel(
         QObject* parent,
         TrackCollectionManager* pTrackCollectionManager,
-        const mixxx::navidrome::SubsonicClient* pClient,
-        mixxx::navidrome::NavidromeDownloader* pDownloader)
+        const mixxx::opensubsonic::SubsonicClient* pClient,
+        mixxx::opensubsonic::OpenSubsonicDownloader* pDownloader)
         : BaseTrackTableModel(parent,
                   pTrackCollectionManager,
-                  "mixxx.db.model.navidrome"),
+                  "mixxx.db.model.opensubsonic"),
           m_pClient(pClient),
           m_pDownloader(pDownloader),
           m_sortColumn(-1),
           m_sortOrder(Qt::AscendingOrder) {
-    initTableColumnsAndHeaderProperties(navidromeTableColumns());
+    initTableColumnsAndHeaderProperties(opensubsonicTableColumns());
 
     for (auto it = sortColumnIdMap().cbegin(); it != sortColumnIdMap().cend(); ++it) {
         const int columnIndex = fieldIndex(it.key());
@@ -135,7 +135,7 @@ NavidromeTrackModel::NavidromeTrackModel(
     }
 }
 
-void NavidromeTrackModel::setAlbumSongs(QList<Song> songs) {
+void OpenSubsonicTrackModel::setAlbumSongs(QList<Song> songs) {
     beginResetModel();
     m_albumSongs = std::move(songs);
     m_allSongs = m_albumSongs;
@@ -145,7 +145,7 @@ void NavidromeTrackModel::setAlbumSongs(QList<Song> songs) {
     endResetModel();
 }
 
-void NavidromeTrackModel::setSearchResults(
+void OpenSubsonicTrackModel::setSearchResults(
         const QString& query,
         const QList<Song>& songs) {
     if (query != m_searchText) {
@@ -159,7 +159,7 @@ void NavidromeTrackModel::setSearchResults(
     endResetModel();
 }
 
-void NavidromeTrackModel::clearSearch() {
+void OpenSubsonicTrackModel::clearSearch() {
     if (m_searchText.isEmpty()) {
         return;
     }
@@ -171,7 +171,7 @@ void NavidromeTrackModel::clearSearch() {
     endResetModel();
 }
 
-void NavidromeTrackModel::clearSongs() {
+void OpenSubsonicTrackModel::clearSongs() {
     beginResetModel();
     m_albumSongs.clear();
     m_allSongs.clear();
@@ -181,14 +181,14 @@ void NavidromeTrackModel::clearSongs() {
     endResetModel();
 }
 
-int NavidromeTrackModel::rowCount(const QModelIndex& parent) const {
+int OpenSubsonicTrackModel::rowCount(const QModelIndex& parent) const {
     if (parent.isValid()) {
         return 0;
     }
     return static_cast<int>(m_visibleSongs.size());
 }
 
-void NavidromeTrackModel::rebuildVisibleSongs() {
+void OpenSubsonicTrackModel::rebuildVisibleSongs() {
     m_visibleSongs = m_allSongs;
 
     if (m_sortColumn < 0) {
@@ -223,7 +223,7 @@ void NavidromeTrackModel::rebuildVisibleSongs() {
             });
 }
 
-void NavidromeTrackModel::sort(int column, Qt::SortOrder order) {
+void OpenSubsonicTrackModel::sort(int column, Qt::SortOrder order) {
     if (column < 0 || column >= columnCount()) {
         return;
     }
@@ -234,7 +234,7 @@ void NavidromeTrackModel::sort(int column, Qt::SortOrder order) {
     endResetModel();
 }
 
-QVariant NavidromeTrackModel::fieldValue(
+QVariant OpenSubsonicTrackModel::fieldValue(
         const Song& song,
         ColumnCache::Column column) {
     switch (column) {
@@ -278,9 +278,9 @@ QVariant NavidromeTrackModel::fieldValue(
     case ColumnCache::COLUMN_LIBRARYTABLE_PREVIEW:
         return false;
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_LOCATION:
-        return mixxx::navidrome::cachedSongFilePath(song);
+        return mixxx::opensubsonic::cachedSongFilePath(song);
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_DIRECTORY:
-        return QFileInfo(mixxx::navidrome::cachedSongFilePath(song))
+        return QFileInfo(mixxx::opensubsonic::cachedSongFilePath(song))
                 .absolutePath();
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_FSDELETED:
         return false;
@@ -289,7 +289,7 @@ QVariant NavidromeTrackModel::fieldValue(
     }
 }
 
-QVariant NavidromeTrackModel::rawValue(const QModelIndex& index) const {
+QVariant OpenSubsonicTrackModel::rawValue(const QModelIndex& index) const {
     if (!index.isValid() || index.row() < 0 ||
             index.row() >= m_visibleSongs.size()) {
         return {};
@@ -297,7 +297,7 @@ QVariant NavidromeTrackModel::rawValue(const QModelIndex& index) const {
     return fieldValue(m_visibleSongs.at(index.row()), mapColumn(index.column()));
 }
 
-TrackPointer NavidromeTrackModel::getTrack(const QModelIndex& index) const {
+TrackPointer OpenSubsonicTrackModel::getTrack(const QModelIndex& index) const {
     if (!index.isValid() || index.row() < 0 ||
             index.row() >= m_visibleSongs.size()) {
         return {};
@@ -310,18 +310,19 @@ TrackPointer NavidromeTrackModel::getTrack(const QModelIndex& index) const {
 
     const Song& song = m_visibleSongs.at(row);
 
-    if (m_pDownloader &&
-            !mixxx::navidrome::NavidromeDownloader::isCached(song)) {
-        // Prefetch the track the user just selected. The track table only
-        // calls getTrack() after the user stopped interacting with a single
-        // selected row, so this does not download whole albums or search
-        // results. It makes double-click loading (which bypasses the URL
-        // based drag & drop path) work as well.
-        m_pDownloader->enqueue(song);
+    // NOTE: No prefetch/download here. Playback is streamed directly from the
+    // server: songs that are not buffered yet are referenced by their stream
+    // URL, buffered songs by their local file. Downloads only happen as a
+    // fallback when a stream can not be opened.
+    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
+    mixxx::FileAccess fileAccess;
+    if (QFileInfo::exists(localPath) || !m_pClient) {
+        fileAccess = mixxx::FileAccess(mixxx::FileInfo(localPath));
+    } else {
+        fileAccess = mixxx::FileAccess(
+                mixxx::FileInfo::fromRemoteUrl(m_pClient->downloadUrl(song)));
     }
-
-    auto pTrack = Track::newTemporary(mixxx::FileAccess(
-            mixxx::FileInfo(mixxx::navidrome::cachedSongFilePath(song))));
+    auto pTrack = Track::newTemporary(std::move(fileAccess));
     pTrack->setTitle(song.title);
     pTrack->setArtist(song.artist);
     pTrack->setAlbum(song.album);
@@ -350,27 +351,27 @@ TrackPointer NavidromeTrackModel::getTrack(const QModelIndex& index) const {
     return pTrack;
 }
 
-QUrl NavidromeTrackModel::getTrackUrl(const QModelIndex& index) const {
+QUrl OpenSubsonicTrackModel::getTrackUrl(const QModelIndex& index) const {
     if (!m_pClient || !index.isValid() || index.row() < 0 ||
             index.row() >= m_visibleSongs.size()) {
         return {};
     }
     const Song& song = m_visibleSongs.at(index.row());
-    const QString localPath = mixxx::navidrome::cachedSongFilePath(song);
+    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
     if (QFileInfo::exists(localPath)) {
         return QUrl::fromLocalFile(localPath);
     }
     return m_pClient->downloadUrl(song);
 }
 
-TrackModel::Capabilities NavidromeTrackModel::getCapabilities() const {
+TrackModel::Capabilities OpenSubsonicTrackModel::getCapabilities() const {
     return Capability::LoadToDeck |
             Capability::LoadToSampler |
             Capability::LoadToPreviewDeck |
             Capability::Sorting;
 }
 
-Qt::ItemFlags NavidromeTrackModel::readWriteFlags(
+Qt::ItemFlags OpenSubsonicTrackModel::readWriteFlags(
         const QModelIndex& index) const {
     if (!index.isValid()) {
         return Qt::ItemIsEnabled;
@@ -386,7 +387,7 @@ Qt::ItemFlags NavidromeTrackModel::readWriteFlags(
     return flags;
 }
 
-bool NavidromeTrackModel::setTrackValueForColumn(
+bool OpenSubsonicTrackModel::setTrackValueForColumn(
         const TrackPointer& pTrack,
         int column,
         const QVariant& value,
@@ -430,10 +431,10 @@ bool NavidromeTrackModel::setTrackValueForColumn(
     return true;
 }
 
-bool NavidromeTrackModel::updateSongRating(
+bool OpenSubsonicTrackModel::updateSongRating(
         const QString& songId, int rating) {
     bool updated = false;
-    const auto updateSongs = [&](QList<mixxx::navidrome::Song>* pSongs) {
+    const auto updateSongs = [&](QList<mixxx::opensubsonic::Song>* pSongs) {
         for (auto& song : *pSongs) {
             if (song.id == songId) {
                 song.userRating = rating;
@@ -447,13 +448,13 @@ bool NavidromeTrackModel::updateSongRating(
     return updated;
 }
 
-QString NavidromeTrackModel::getTrackLocation(const QModelIndex& index) const {
+QString OpenSubsonicTrackModel::getTrackLocation(const QModelIndex& index) const {
     if (!index.isValid() || index.row() < 0 ||
             index.row() >= m_visibleSongs.size()) {
         return {};
     }
     const Song& song = m_visibleSongs.at(index.row());
-    const QString localPath = mixxx::navidrome::cachedSongFilePath(song);
+    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
     if (QFileInfo::exists(localPath)) {
         return localPath;
     }
@@ -466,23 +467,23 @@ QString NavidromeTrackModel::getTrackLocation(const QModelIndex& index) const {
     return {};
 }
 
-TrackId NavidromeTrackModel::getTrackId(const QModelIndex& index) const {
+TrackId OpenSubsonicTrackModel::getTrackId(const QModelIndex& index) const {
     Q_UNUSED(index);
     // Remote tracks are not part of the internal collection (yet).
     return TrackId();
 }
 
-CoverInfo NavidromeTrackModel::getCoverInfo(const QModelIndex& index) const {
+CoverInfo OpenSubsonicTrackModel::getCoverInfo(const QModelIndex& index) const {
     Q_UNUSED(index);
     return CoverInfo();
 }
 
-const QVector<int> NavidromeTrackModel::getTrackRows(TrackId trackId) const {
+const QVector<int> OpenSubsonicTrackModel::getTrackRows(TrackId trackId) const {
     Q_UNUSED(trackId);
     return {};
 }
 
-void NavidromeTrackModel::search(const QString& searchText) {
+void OpenSubsonicTrackModel::search(const QString& searchText) {
     const QString trimmedSearchText = searchText.trimmed();
     if (trimmedSearchText == m_searchText) {
         return;
@@ -506,11 +507,11 @@ void NavidromeTrackModel::search(const QString& searchText) {
     emit searchRequested(trimmedSearchText);
 }
 
-const QString NavidromeTrackModel::currentSearch() const {
+const QString OpenSubsonicTrackModel::currentSearch() const {
     return m_searchText;
 }
 
-bool NavidromeTrackModel::isColumnInternal(int column) {
+bool OpenSubsonicTrackModel::isColumnInternal(int column) {
     const auto field = mapColumn(column);
     switch (field) {
     case ColumnCache::COLUMN_LIBRARYTABLE_ID:
@@ -539,22 +540,22 @@ bool NavidromeTrackModel::isColumnInternal(int column) {
     }
 }
 
-TrackModel::SortColumnId NavidromeTrackModel::sortColumnIdFromColumnIndex(
+TrackModel::SortColumnId OpenSubsonicTrackModel::sortColumnIdFromColumnIndex(
         int index) const {
     return m_sortColumnIdByColumnIndex.value(
             index, TrackModel::SortColumnId::Invalid);
 }
 
-int NavidromeTrackModel::columnIndexFromSortColumnId(
+int OpenSubsonicTrackModel::columnIndexFromSortColumnId(
         TrackModel::SortColumnId sortColumn) const {
     return m_columnIndexBySortColumnId.value(static_cast<int>(sortColumn), -1);
 }
 
-QString NavidromeTrackModel::modelKey(bool noSearch) const {
+QString OpenSubsonicTrackModel::modelKey(bool noSearch) const {
     if (noSearch) {
-        return QStringLiteral("navidrome");
+        return QStringLiteral("opensubsonic");
     }
-    return QStringLiteral("navidrome:") + m_searchText;
+    return QStringLiteral("opensubsonic:") + m_searchText;
 }
 
-#include "moc_navidrometrackmodel.cpp"
+#include "moc_opensubsonictrackmodel.cpp"

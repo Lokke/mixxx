@@ -10,33 +10,44 @@
 #include <memory>
 #include <vector>
 
+#include "analyzer/analyzerthread.h"
 #include "library/libraryfeature.h"
-#include "library/navidrome/navidrometypes.h"
+#include "library/opensubsonic/opensubsonictypes.h"
 #include "library/treeitemmodel.h"
+#include "track/track_decl.h"
+#include "util/db/dbconnectionpool.h"
 #include "util/parented_ptr.h"
+#include "waveform/waveform.h"
 
-class NavidromeTrackModel;
+class OpenSubsonicTrackModel;
 class QModelIndex;
 
 namespace mixxx {
-namespace navidrome {
-class NavidromeDownloader;
+namespace opensubsonic {
+class OpenSubsonicDownloader;
 class SubsonicClient;
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx
 
-/// Library feature that exposes the music library of a Navidrome server
+/// Library feature that exposes the music library of a OpenSubsonic server
 /// (Subsonic / OpenSubsonic API) in the Mixxx library sidebar.
 ///
 /// This is a read-only browser for now. Neither audio data nor metadata are
 /// imported into the Mixxx database, so nothing has to be cleaned up when the
 /// remote library changes.
-class NavidromeFeature : public LibraryFeature {
+///
+/// Streamed audio data is buffered as a file on a RAM backed filesystem,
+/// because the Mixxx audio pipeline only accepts local files. The buffer is
+/// released as soon as the track is removed from all players and never
+/// survives the application run.
+class OpenSubsonicFeature : public LibraryFeature {
     Q_OBJECT
 
   public:
-    NavidromeFeature(Library* pLibrary, UserSettingsPointer pConfig);
-    ~NavidromeFeature() override = default;
+    OpenSubsonicFeature(Library* pLibrary,
+            UserSettingsPointer pConfig,
+            mixxx::DbConnectionPoolPtr pDbConnectionPool);
+    ~OpenSubsonicFeature() override;
 
     QVariant title() override;
     TreeItemModel* sidebarModel() const override {
@@ -55,11 +66,11 @@ class NavidromeFeature : public LibraryFeature {
     void reloadSettings();
 
   private slots:
-    void slotArtistsFetched(const QList<mixxx::navidrome::Artist>& artists);
+    void slotArtistsFetched(const QList<mixxx::opensubsonic::Artist>& artists);
     void slotAlbumsFetched(const QString& artistId,
-            const QList<mixxx::navidrome::Album>& albums);
+            const QList<mixxx::opensubsonic::Album>& albums);
     void slotSongsFetched(const QString& albumId,
-            const QList<mixxx::navidrome::Song>& songs);
+            const QList<mixxx::opensubsonic::Song>& songs);
     void slotRequestFailed(const QString& context, const QString& errorMessage);
     /// A remote stream URL (e.g. dropped onto a deck) should be played.
     void slotLoadRemoteUrlToPlayer(const QUrl& url,
@@ -67,6 +78,11 @@ class NavidromeFeature : public LibraryFeature {
             bool play);
     void slotSongDownloaded(const QString& songId, const QString& localPath);
     void slotDownloadFailed(const QString& songId, const QString& errorMessage);
+    /// Drops the buffered audio data of a track that is no longer loaded into
+    /// any player.
+    void slotPlayerTrackChanged(const QString& group,
+            const TrackPointer& pNewTrack,
+            const TrackPointer& pOldTrack);
 
   private:
     struct PendingLoad {
@@ -74,16 +90,25 @@ class NavidromeFeature : public LibraryFeature {
         bool play = false;
     };
 
-    void rememberSongs(const QList<mixxx::navidrome::Song>& songs);
+    void rememberSongs(const QList<mixxx::opensubsonic::Song>& songs);
+    void discardBufferedAudioIfUnused(const QString& localPath);
+    /// Streamed tracks are not part of the local library, so Mixxx never
+    /// analyzes them and their waveform would stay empty. Once such a track
+    /// has been loaded into a player it is handed to a dedicated analyzer
+    /// thread that computes the waveform (and beat grid, key, ...) in the
+    /// background.
+    void scheduleStreamTrackAnalysis(const TrackPointer& pTrack);
+    void submitPendingStreamTrackAnalyses();
+    void startAnalyzerThread();
     void loadChildren(const QModelIndex& index);
     void replaceChildren(const QModelIndex& parentIndex,
             std::vector<std::unique_ptr<TreeItem>>&& children);
     void showInfoItem(const QModelIndex& parentIndex, const QString& message);
 
     parented_ptr<TreeItemModel> m_pSidebarModel;
-    mixxx::navidrome::SubsonicClient* const m_pClient;
-    mixxx::navidrome::NavidromeDownloader* m_pDownloader;
-    NavidromeTrackModel* m_pTrackModel;
+    mixxx::opensubsonic::SubsonicClient* const m_pClient;
+    mixxx::opensubsonic::OpenSubsonicDownloader* m_pDownloader;
+    OpenSubsonicTrackModel* m_pTrackModel;
 
     /// Node identifiers ("artists", "artist:<id>") that have already been
     /// populated, so that expanding a node repeatedly does not trigger
@@ -98,7 +123,19 @@ class NavidromeFeature : public LibraryFeature {
     /// Metadata of all songs that have been seen so far, keyed by Subsonic id.
     /// Used to resolve a stream URL back to its song when it is dropped onto
     /// a player.
-    QHash<QString, mixxx::navidrome::Song> m_songsById;
+    QHash<QString, mixxx::opensubsonic::Song> m_songsById;
     /// Player loads that are waiting for the download to finish.
     QHash<QString, PendingLoad> m_pendingLoads;
+
+    /// Analyzer thread for streamed tracks, created on demand.
+    mixxx::DbConnectionPoolPtr m_pDbConnectionPool;
+    AnalyzerThread::Pointer m_pAnalyzerThread;
+    bool m_analyzerThreadIdle = false;
+    QList<TrackPointer> m_pendingAnalysisTracks;
+
+    /// Waveforms that have already been computed for a song, keyed by the
+    /// song id. Streamed tracks are new objects on every load, so this avoids
+    /// downloading and analyzing the same song over and over again.
+    QHash<QString, ConstWaveformPointer> m_waveformsBySongId;
+    QHash<QString, ConstWaveformPointer> m_waveformSummariesBySongId;
 };

@@ -10,28 +10,31 @@
 
 #include <memory>
 
-#include "library/navidrome/navidrometypes.h"
+#include "library/opensubsonic/opensubsonictypes.h"
 
 class QNetworkReply;
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
 class SubsonicClient;
 
-/// Downloads songs sequentially into the local cache.
+/// Downloads songs sequentially into the volatile audio buffer.
 ///
 /// Mixxx' audio engine only accepts local files, so every track that should
-/// be dragged onto a deck has to exist on disk first. The downloader keeps a
-/// small queue and never runs more than one transfer at a time.
-class NavidromeDownloader : public QObject {
+/// be dragged onto a deck has to be materialised as a file first. The buffer
+/// is located on a RAM backed filesystem and is released again as soon as the
+/// track is removed from all players, so no audio data is stored persistently.
+/// The downloader keeps a small queue and never runs more than one transfer at
+/// a time.
+class OpenSubsonicDownloader : public QObject {
     Q_OBJECT
 
   public:
-    explicit NavidromeDownloader(
+    explicit OpenSubsonicDownloader(
             const SubsonicClient* pClient,
             QObject* parent = nullptr);
-    ~NavidromeDownloader() override;
+    ~OpenSubsonicDownloader() override;
 
     /// Queues a single song. Duplicates are ignored.
     void enqueue(const Song& song);
@@ -40,7 +43,7 @@ class NavidromeDownloader : public QObject {
     /// Aborts the current transfer and drops all pending songs.
     void cancelAll();
 
-    /// Whether the song is already available in the local cache.
+    /// Whether the song is already buffered locally.
     static bool isCached(const Song& song);
 
   signals:
@@ -65,5 +68,5 @@ class NavidromeDownloader : public QObject {
     QString m_currentPartPath;
 };
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx

@@ -1,26 +1,25 @@
-#include "library/navidrome/navidromedownloader.h"
+#include "library/opensubsonic/opensubsonicdownloader.h"
 
-#include <QDir>
 #include <QFileInfo>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
-#include "library/navidrome/navidromecache.h"
-#include "library/navidrome/subsonicclient.h"
+#include "library/opensubsonic/opensubsoniccache.h"
+#include "library/opensubsonic/subsonicclient.h"
 #include "util/logger.h"
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
 namespace {
 
-const Logger kLogger("NavidromeDownloader");
+const Logger kLogger("OpenSubsonicDownloader");
 
 constexpr int kTransferTimeoutMillis = 60000;
 
 } // namespace
 
-NavidromeDownloader::NavidromeDownloader(
+OpenSubsonicDownloader::OpenSubsonicDownloader(
         const SubsonicClient* pClient,
         QObject* parent)
         : QObject(parent),
@@ -28,11 +27,11 @@ NavidromeDownloader::NavidromeDownloader(
           m_pReply(nullptr) {
 }
 
-NavidromeDownloader::~NavidromeDownloader() {
+OpenSubsonicDownloader::~OpenSubsonicDownloader() {
     cancelAll();
 }
 
-bool NavidromeDownloader::isCached(const Song& song) {
+bool OpenSubsonicDownloader::isCached(const Song& song) {
     const QFileInfo fileInfo(cachedSongFilePath(song));
     if (!fileInfo.exists() || !fileInfo.isFile()) {
         return false;
@@ -44,7 +43,7 @@ bool NavidromeDownloader::isCached(const Song& song) {
     return true;
 }
 
-void NavidromeDownloader::enqueue(const Song& song) {
+void OpenSubsonicDownloader::enqueue(const Song& song) {
     if (song.id.isEmpty() || isCached(song) || m_scheduled.contains(song.id)) {
         return;
     }
@@ -53,7 +52,7 @@ void NavidromeDownloader::enqueue(const Song& song) {
     startNextDownload();
 }
 
-void NavidromeDownloader::enqueueAll(const QList<Song>& songs) {
+void OpenSubsonicDownloader::enqueueAll(const QList<Song>& songs) {
     for (const Song& song : songs) {
         if (song.id.isEmpty() || isCached(song) || m_scheduled.contains(song.id)) {
             continue;
@@ -64,7 +63,7 @@ void NavidromeDownloader::enqueueAll(const QList<Song>& songs) {
     startNextDownload();
 }
 
-void NavidromeDownloader::cancelAll() {
+void OpenSubsonicDownloader::cancelAll() {
     m_queue.clear();
     m_scheduled.clear();
     if (m_pReply) {
@@ -78,7 +77,7 @@ void NavidromeDownloader::cancelAll() {
     resetCurrentDownload();
 }
 
-void NavidromeDownloader::startNextDownload() {
+void OpenSubsonicDownloader::startNextDownload() {
     if (m_pReply || m_queue.isEmpty() || !m_pClient) {
         return;
     }
@@ -97,11 +96,10 @@ void NavidromeDownloader::startNextDownload() {
     }
 
     const QString localPath = cachedSongFilePath(m_currentSong);
-    const QFileInfo localFileInfo(localPath);
-    if (!QDir().mkpath(localFileInfo.absolutePath())) {
+    if (!ensureSessionCacheDirectory()) {
         finishCurrentDownload(false,
-                tr("Could not create cache directory '%1'")
-                        .arg(localFileInfo.absolutePath()));
+                tr("Could not create buffer directory '%1'")
+                        .arg(QFileInfo(localPath).absolutePath()));
         return;
     }
 
@@ -147,7 +145,7 @@ void NavidromeDownloader::startNextDownload() {
             });
 }
 
-void NavidromeDownloader::finishCurrentDownload(
+void OpenSubsonicDownloader::finishCurrentDownload(
         bool success,
         const QString& errorMessage) {
     const QString songId = m_currentSong.id;
@@ -185,11 +183,11 @@ void NavidromeDownloader::finishCurrentDownload(
     } else {
         // Queued to avoid deep recursion when many downloads fail in a row.
         QMetaObject::invokeMethod(
-                this, &NavidromeDownloader::startNextDownload, Qt::QueuedConnection);
+                this, &OpenSubsonicDownloader::startNextDownload, Qt::QueuedConnection);
     }
 }
 
-void NavidromeDownloader::resetCurrentDownload() {
+void OpenSubsonicDownloader::resetCurrentDownload() {
     if (m_pPartialFile) {
         m_pPartialFile->close();
         m_pPartialFile.reset();
@@ -201,7 +199,7 @@ void NavidromeDownloader::resetCurrentDownload() {
     }
 }
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx
 
-#include "moc_navidromedownloader.cpp"
+#include "moc_opensubsonicdownloader.cpp"

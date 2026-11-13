@@ -7,13 +7,13 @@
 #include <QString>
 #include <QUrl>
 
-#include "library/navidrome/navidrometypes.h"
+#include "library/opensubsonic/opensubsonictypes.h"
 
 class QJsonObject;
 class QUrlQuery;
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
 /// Minimal asynchronous client for the Subsonic / OpenSubsonic REST API.
 ///
@@ -64,13 +64,13 @@ class SubsonicClient : public QObject {
 
   signals:
     void connectionTestFinished(bool success, const QString& message);
-    void artistsFetched(const QList<mixxx::navidrome::Artist>& artists);
+    void artistsFetched(const QList<mixxx::opensubsonic::Artist>& artists);
     void albumsFetched(const QString& artistId,
-            const QList<mixxx::navidrome::Album>& albums);
+            const QList<mixxx::opensubsonic::Album>& albums);
     void songsFetched(const QString& albumId,
-            const QList<mixxx::navidrome::Song>& songs);
+            const QList<mixxx::opensubsonic::Song>& songs);
     void searchResultsFetched(const QString& query,
-            const QList<mixxx::navidrome::Song>& songs);
+            const QList<mixxx::opensubsonic::Song>& songs);
     void requestFailed(const QString& context, const QString& errorMessage);
     /// Emitted after a setRating request was answered by the server.
     void ratingUpdateFinished(
@@ -95,5 +95,5 @@ class SubsonicClient : public QObject {
     QString m_password;
 };
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx

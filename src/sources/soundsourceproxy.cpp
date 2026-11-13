@@ -365,6 +365,18 @@ SoundSourceProxy::allProviderRegistrationsForUrl(
         // silently ignore empty URLs
         return {};
     }
+    // Remote streams (http/https) have no file type/extension, so select the
+    // providers that are able to decode network streams instead.
+    if (!url.isLocalFile()) {
+        const auto remoteRegistrations =
+                s_soundSourceProviders.getRegistrationsForRemoteUrls();
+        if (remoteRegistrations.isEmpty()) {
+            kLogger.warning()
+                    << "No SoundSourceProvider for remote stream"
+                    << url.toString();
+        }
+        return remoteRegistrations;
+    }
     const QString fileType =
             mixxx::SoundSource::getTypeFromUrl(url);
     if (fileType.isEmpty()) {

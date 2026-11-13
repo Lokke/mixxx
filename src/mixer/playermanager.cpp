@@ -789,6 +789,13 @@ void PlayerManager::slotAnalyzeTrack(TrackPointer track) {
     VERIFY_OR_DEBUG_ASSERT(track) {
         return;
     }
+    if (!track->getId().isValid()) {
+        // Temporary tracks without a library id, e.g. tracks that are streamed
+        // from a remote library, cannot be analyzed by the library analysis
+        // scheduler. They are analyzed by the library feature that created
+        // them.
+        return;
+    }
     if (m_pTrackAnalysisScheduler) {
         if (m_pTrackAnalysisScheduler->scheduleTrack(track->getId())) {
             m_pTrackAnalysisScheduler->resume();

@@ -94,8 +94,34 @@ class FileInfo final {
         return FileInfo(url.toLocalFile());
     }
 
+    /// Creates a FileInfo for a remote stream (http/https) that has no local
+    /// file behind it. Used for streaming sources.
+    ///
+    /// Implementation note: the URL is stored inside the wrapped QFileInfo so
+    /// that this class keeps consisting of a single QFileInfo member (see
+    /// isQFileInfo()). Remote FileInfos never touch the file system.
+    static FileInfo fromRemoteUrl(const QUrl& url) {
+        DEBUG_ASSERT(!url.isLocalFile());
+        return FileInfo(url.toString());
+    }
+
+    /// Whether this refers to a remote stream instead of a local file.
+    bool isRemote() const {
+        const QString filePath = m_fileInfo.filePath();
+        return filePath.startsWith(QLatin1String("http://"), Qt::CaseInsensitive) ||
+                filePath.startsWith(QLatin1String("https://"), Qt::CaseInsensitive);
+    }
+
+    /// The URL of a remote stream. Empty for local files.
+    QUrl remoteUrl() const {
+        return isRemote() ? QUrl(m_fileInfo.filePath()) : QUrl();
+    }
+
     /// Explicit conversion to a local file QUrl.
     QUrl toQUrl() const {
+        if (isRemote()) {
+            return remoteUrl();
+        }
         return QUrl::fromLocalFile(location());
     }
 
@@ -108,7 +134,7 @@ class FileInfo final {
         return fileInfo.isAbsolute();
     }
     bool hasLocation() const {
-        return hasLocation(m_fileInfo);
+        return isRemote() || hasLocation(m_fileInfo);
     }
 
     /// Returns the permanent location of a file.
@@ -117,6 +143,9 @@ class FileInfo final {
         return fileInfo.absoluteFilePath();
     }
     QString location() const {
+        if (isRemote()) {
+            return m_fileInfo.filePath();
+        }
         return location(m_fileInfo);
     }
 
@@ -186,6 +215,11 @@ class FileInfo final {
     /// Check if the file actually exists on the file system,
     /// bypassing any internal caching.
     bool checkFileExists() const {
+        if (isRemote()) {
+            // A remote stream is opened by its URL, there is no local file
+            // to probe. Reachability is reported while opening the stream.
+            return true;
+        }
         // Using filePath() is faster than location()
         return QFileInfo::exists(filePath());
     }
@@ -227,9 +261,16 @@ class FileInfo final {
     }
 
     bool isReadable() const {
+        if (isRemote()) {
+            return true;
+        }
         return m_fileInfo.isReadable();
     }
     bool isWritable() const {
+        if (isRemote()) {
+            // Remote streams are never written to.
+            return false;
+        }
         return m_fileInfo.isWritable();
     }
 

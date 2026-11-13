@@ -1,4 +1,4 @@
-#include "library/navidrome/subsonicclient.h"
+#include "library/opensubsonic/subsonicclient.h"
 
 #include <QCryptographicHash>
 #include <QJsonArray>
@@ -15,11 +15,11 @@
 #include "util/logger.h"
 
 namespace mixxx {
-namespace navidrome {
+namespace opensubsonic {
 
 namespace {
 
-const Logger kLogger("NavidromeClient");
+const Logger kLogger("OpenSubsonicClient");
 
 const QString kApiVersion = QStringLiteral("1.16.1");
 const QString kClientName = QStringLiteral("Mixxx");
@@ -81,7 +81,7 @@ Album parseAlbum(const QJsonObject& object) {
     return album;
 }
 
-/// Parses an ISO 8601 timestamp as returned by Navidrome, which may carry
+/// Parses an ISO 8601 timestamp as returned by OpenSubsonic, which may carry
 /// nanosecond precision (e.g. "2025-12-11T19:45:21.75930859Z").
 QDateTime parseSubsonicDateTime(const QString& value) {
     QString text = value;
@@ -314,7 +314,7 @@ void SubsonicClient::requestJson(
         const QString& context) {
     VERIFY_OR_DEBUG_ASSERT(isConfigured()) {
         emit requestFailed(context,
-                tr("Navidrome server is not configured."));
+                tr("OpenSubsonic server is not configured."));
         return;
     }
 
@@ -499,7 +499,7 @@ void SubsonicClient::handleSearch(
     emit searchResultsFetched(query, songs);
 }
 
-} // namespace navidrome
+} // namespace opensubsonic
 } // namespace mixxx
 
 #include "moc_subsonicclient.cpp"

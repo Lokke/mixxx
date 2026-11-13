@@ -209,6 +209,11 @@ class WTrackMenu : public QMenu {
     TrackIdList getTrackIds() const;
     QList<TrackRef> getTrackRefs() const;
 
+    /// True if any of the selected tracks is a remote stream without a local
+    /// file, e.g. a track of the OpenSubsonic library. Such tracks cannot be
+    /// revealed in the file browser.
+    bool hasRemoteTrackRef() const;
+
     TrackPointer getFirstTrackPointer() const;
     TrackPointerList getTrackPointers() const;
 

@@ -1,4 +1,4 @@
-#include "preferences/dialog/dlgprefnavidrome.h"
+#include "preferences/dialog/dlgprefopensubsonic.h"
 
 #include <QFormLayout>
 #include <QGroupBox>
@@ -7,19 +7,19 @@
 #include <utility>
 
 #include "library/library.h"
-#include "moc_dlgprefnavidrome.cpp"
+#include "moc_dlgprefopensubsonic.cpp"
 #include "preferences/configobject.h"
 
 namespace {
 
-// Must match the keys used by mixxx::navidrome::NavidromeFeature.
-const ConfigKey kServerUrlConfigKey("[Navidrome]", "server_url");
-const ConfigKey kUserNameConfigKey("[Navidrome]", "username");
-const ConfigKey kPasswordConfigKey("[Navidrome]", "password");
+// Must match the keys used by mixxx::opensubsonic::OpenSubsonicFeature.
+const ConfigKey kServerUrlConfigKey("[OpenSubsonic]", "server_url");
+const ConfigKey kUserNameConfigKey("[OpenSubsonic]", "username");
+const ConfigKey kPasswordConfigKey("[OpenSubsonic]", "password");
 
 } // namespace
 
-DlgPrefNavidrome::DlgPrefNavidrome(
+DlgPrefOpenSubsonic::DlgPrefOpenSubsonic(
         QWidget* pParent,
         UserSettingsPointer pConfig,
         Library* pLibrary)
@@ -34,7 +34,7 @@ DlgPrefNavidrome::DlgPrefNavidrome(
     m_pUserName->setPlaceholderText(tr("User name"));
     m_pPassword->setEchoMode(QLineEdit::Password);
 
-    auto* pGroupBox = new QGroupBox(tr("Navidrome Server"), this);
+    auto* pGroupBox = new QGroupBox(tr("OpenSubsonic Server"), this);
     auto* pFormLayout = new QFormLayout(pGroupBox);
     pFormLayout->addRow(tr("&Server URL:"), m_pServerUrl);
     pFormLayout->addRow(tr("&User name:"), m_pUserName);
@@ -59,31 +59,31 @@ DlgPrefNavidrome::DlgPrefNavidrome(
     loadSettings();
 }
 
-QUrl DlgPrefNavidrome::helpUrl() const {
+QUrl DlgPrefOpenSubsonic::helpUrl() const {
     return QUrl(QStringLiteral(
             "https://manual.mixxx.org/latest/en/chapters/library.html"));
 }
 
-void DlgPrefNavidrome::slotUpdate() {
+void DlgPrefOpenSubsonic::slotUpdate() {
     loadSettings();
 }
 
-void DlgPrefNavidrome::slotApply() {
+void DlgPrefOpenSubsonic::slotApply() {
     saveSettings();
     // Let the library pick up the new settings without a restart.
     if (m_pLibrary) {
-        m_pLibrary->reloadNavidromeSettings();
+        m_pLibrary->reloadOpenSubsonicSettings();
     }
 }
 
-void DlgPrefNavidrome::slotResetToDefaults() {
+void DlgPrefOpenSubsonic::slotResetToDefaults() {
     m_pServerUrl->clear();
     m_pUserName->clear();
     m_pPassword->clear();
     updateStatusHint();
 }
 
-void DlgPrefNavidrome::loadSettings() {
+void DlgPrefOpenSubsonic::loadSettings() {
     m_pServerUrl->setText(
             m_pConfig->getValueString(kServerUrlConfigKey).trimmed());
     m_pUserName->setText(
@@ -92,7 +92,7 @@ void DlgPrefNavidrome::loadSettings() {
     updateStatusHint();
 }
 
-void DlgPrefNavidrome::saveSettings() {
+void DlgPrefOpenSubsonic::saveSettings() {
     QString serverUrl = m_pServerUrl->text().trimmed();
     // Be forgiving about a missing scheme.
     if (!serverUrl.isEmpty() &&
@@ -112,7 +112,7 @@ void DlgPrefNavidrome::saveSettings() {
     updateStatusHint();
 }
 
-void DlgPrefNavidrome::updateStatusHint() {
+void DlgPrefOpenSubsonic::updateStatusHint() {
     const QString serverUrl = m_pServerUrl->text().trimmed();
     if (serverUrl.isEmpty() || m_pUserName->text().trimmed().isEmpty() ||
             m_pPassword->text().isEmpty()) {
@@ -123,7 +123,7 @@ void DlgPrefNavidrome::updateStatusHint() {
     }
     m_pStatusLabel->setText(
             tr("Configured. The credentials are stored in the Mixxx "
-               "settings file (section [Navidrome]).\n"
+               "settings file (section [OpenSubsonic]).\n"
                "The password itself is never sent to the server, only a "
                "salted MD5 token."));
 }

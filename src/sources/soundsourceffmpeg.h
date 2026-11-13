@@ -238,6 +238,11 @@ class SoundSourceProviderFFmpeg : public SoundSourceProvider {
         return newSoundSourceFromUrl<SoundSourceFFmpeg>(url);
     }
 
+    bool supportsRemoteUrls() const override {
+        // FFmpeg brings its own http/https protocol handlers.
+        return true;
+    }
+
     QString getVersionString() const;
 };
 

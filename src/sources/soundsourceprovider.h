@@ -57,6 +57,12 @@ class SoundSourceProvider {
     /// able to decide that the file is not supported even though it
     /// has one of the supported file types.
     virtual SoundSourcePointer newSoundSource(const QUrl& url) = 0;
+
+    /// Whether this provider can decode remote streams (http/https) that
+    /// have no local file behind them.
+    virtual bool supportsRemoteUrls() const {
+        return false;
+    }
 };
 
 typedef std::shared_ptr<SoundSourceProvider> SoundSourceProviderPointer;

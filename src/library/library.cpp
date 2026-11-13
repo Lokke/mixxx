@@ -20,7 +20,7 @@
 #include "library/librarycontrol.h"
 #include "library/libraryfeature.h"
 #include "library/mixxxlibraryfeature.h"
-#include "library/navidrome/navidromefeature.h"
+#include "library/opensubsonic/opensubsonicfeature.h"
 #include "library/recording/recordingfeature.h"
 #include "library/rekordbox/rekordboxfeature.h"
 #include "library/rhythmbox/rhythmboxfeature.h"
@@ -181,10 +181,10 @@ Library::Library(
             this,
             &Library::onTrackAnalyzerProgress);
 
-    // Remote library provided by a Navidrome (Subsonic) server.
+    // Remote library provided by a OpenSubsonic (Subsonic) server.
     // Browsing only for now, playback still needs a local cache.
-    m_pNavidromeFeature = new NavidromeFeature(this, m_pConfig);
-    addFeature(m_pNavidromeFeature);
+    m_pOpenSubsonicFeature = new OpenSubsonicFeature(this, m_pConfig, m_pDbConnectionPool);
+    addFeature(m_pOpenSubsonicFeature);
 
     // iTunes and Rhythmbox should be last until we no longer have an obnoxious
     // messagebox popup when you select them. (This forces you to reach for your
@@ -498,9 +498,9 @@ void Library::bindLibraryWidget(
     emit setSelectedClick(m_editMetadataSelectedClick);
 }
 
-void Library::reloadNavidromeSettings() {
-    if (m_pNavidromeFeature) {
-        m_pNavidromeFeature->reloadSettings();
+void Library::reloadOpenSubsonicSettings() {
+    if (m_pOpenSubsonicFeature) {
+        m_pOpenSubsonicFeature->reloadSettings();
     }
 }
 
