@@ -1,0 +1,41 @@
+<!--
+Description:
+  Round mic talkover button, used in the broadcast rack.
+
+  Same behaviour as button_2state.xml, but with the dedicated round
+  background graphics btn_round_big(_active).svg instead of the
+  rectangular BtnType/BtnSize frames.
+
+Variables:
+  ObjectName    : object name
+  TooltipId     : standard tooltip from the Mixxx tooltip database
+  Size          : button size (square recommended)
+  ConfigKey     : control that is toggled
+-->
+<Template>
+  <PushButton>
+    <TooltipId><Variable name="TooltipId"/></TooltipId>
+    <ObjectName><Variable name="ObjectName"/></ObjectName>
+    <Size><Variable name="Size"/></Size>
+    <NumberStates>2</NumberStates>
+    <RightClickIsPushButton>false</RightClickIsPushButton>
+    <State>
+      <Number>0</Number>
+      <Text></Text>
+      <Alignment>center</Alignment>
+      <Unpressed scalemode="STRETCH_ASPECT">skins:LateNight/<Variable name="BtnScheme"/>/buttons/btn_round_big.svg</Unpressed>
+      <Pressed scalemode="STRETCH_ASPECT">skins:LateNight/<Variable name="BtnScheme"/>/buttons/btn_round_big_active.svg</Pressed>
+    </State>
+    <State>
+      <Number>1</Number>
+      <Text></Text>
+      <Alignment>center</Alignment>
+      <Unpressed scalemode="STRETCH_ASPECT">skins:LateNight/<Variable name="BtnScheme"/>/buttons/btn_round_big_active.svg</Unpressed>
+      <Pressed scalemode="STRETCH_ASPECT">skins:LateNight/<Variable name="BtnScheme"/>/buttons/btn_round_big_active.svg</Pressed>
+    </State>
+    <Connection>
+      <ConfigKey><Variable name="ConfigKey"/></ConfigKey>
+      <ButtonState>LeftButton</ButtonState>
+    </Connection>
+  </PushButton>
+</Template>

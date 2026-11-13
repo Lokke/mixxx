@@ -490,7 +490,16 @@
                           <SizePolicy>me,max</SizePolicy>
                           <Children>
                             <Template src="skins:LateNight/decks/decks_left.xml"/>
-                            <Template src="skins:LateNight/mixer.xml"/>
+                            <WidgetGroup>
+                              <Layout>vertical</Layout>
+                              <SizePolicy>max,me</SizePolicy>
+                              <Children>
+                                <!-- Mixer (channel strips + headphone section)
+                                is hidden for this minimal layout. The broadcast
+                                rack takes the whole height of the deck row. -->
+                                <Template src="skins:LateNight/mic_broadcast_bar.xml"/>
+                              </Children>
+                            </WidgetGroup>
                             <Template src="skins:LateNight/decks/decks_right.xml"/>
                           </Children>
                         </WidgetGroup>

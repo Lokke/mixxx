@@ -2936,5 +2936,52 @@ WSearchLineEdit::indicator:unchecked,
 WSearchLineEdit::indicator:unchecked:selected {
   image: none;
 }
+
+/************** Mic / On Air / Rec bar between the decks **********************/
+/* idle. The round mic button paints its own state colors
+   (btn_round_big(_active).svg), so it gets no background-color here. */
+WPushButton#BarRecButton[displayValue="0"],
+WPushButton#BarBroadcastButton[displayValue="0"] {
+  background-color: #262626;
+}
+
+/* recording in progress */
+WPushButton#BarRecButton[displayValue="2"] {
+  background-color: #db0000;
+}
+
+/* broadcasting */
+WPushButton#BarBroadcastButton[displayValue="2"] {
+  background-color: #659f08;
+}
+
+/* connecting broadcast, initializing recording */
+WPushButton#BarBroadcastButton[displayValue="1"],
+WPushButton#BarRecButton[displayValue="1"] {
+  background-color: #d09300;
+}
+
+/* broadcast failure / warning */
+WPushButton#BarBroadcastButton[displayValue="3"],
+WPushButton#BarBroadcastButton[displayValue="4"] {
+  background-color: #f856e7;
+}
+
+/* rack labels and recording duration */
+#MicBroadcastLabel {
+  color: #7f8899;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+#BarRecDuration {
+  color: #c9d1dc;
+  font-size: 12px;
+}
+
+/* eject button in the deck transport row */
+#EjectButton {
+  image: url(skins:LateNight/classic/buttons/btn__eject.svg) no-repeat center center;
+}
+
 /************** common styles for WEffectSelector ******************************
 *************** QSpinBox, QMenu, QToolTip *************************************/

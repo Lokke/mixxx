@@ -2,7 +2,8 @@
 
   <WidgetGroup>
     <Layout>vertical</Layout>
-    <MaximumSize>,230</MaximumSize>
+    <!-- keeps the deck at the height of the broadcast rack between the decks -->
+    <MaximumSize>,175</MaximumSize>
     <Children>
 
       <Template src="skins:LateNight/decks/deck_singletons.xml">
@@ -16,24 +17,10 @@
           <!-- no mixer -->
           <WidgetStack currentpage="[LateNight],deck_size_without_mixer" persist="true">
             <Children>
-              <!-- minimal deck selected -->
-              <WidgetGroup trigger="[LateNight],show_mini_deck">
-                <Layout>horizontal</Layout>
-                <Children>
-                  <SingletonContainer>
-                    <ObjectName>Deck<Variable name="ChanNum"/>_Mini</ObjectName>
-                  </SingletonContainer>
-                </Children>
-              </WidgetGroup>
-              <!-- Compact deck selected -->
-              <WidgetGroup trigger="[LateNight],show_compact_deck">
-                <Layout>horizontal</Layout>
-                <Children>
-                <SingletonContainer>
-                  <ObjectName>Deck<Variable name="ChanNum"/>_Compact</ObjectName>
-                </SingletonContainer>
-                </Children>
-              </WidgetGroup>
+              <!-- Only the full deck is left in this stack, so whichever page
+                   the config keys select, the full deck is shown. The
+                   mini/compact variants are not used in this layout because
+                   the mixer is gone. -->
               <!-- Full deck selected -->
               <WidgetGroup trigger="[LateNight],show_full_deck">
                 <Layout>horizontal</Layout>
