@@ -18,8 +18,8 @@ namespace opensubsonic {
 /// Minimal asynchronous client for the Subsonic / OpenSubsonic REST API.
 ///
 /// Only the endpoints that are required for browsing the remote library are
-/// implemented. Playback related endpoints (download) are exposed as URLs so
-/// that they can be fetched by the download cache later on.
+/// implemented. Playback related endpoints (download) are exposed as URLs that
+/// the audio pipeline can stream directly.
 class SubsonicClient : public QObject {
     Q_OBJECT
 

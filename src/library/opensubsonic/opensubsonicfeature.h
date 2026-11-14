@@ -24,22 +24,21 @@ class QModelIndex;
 
 namespace mixxx {
 namespace opensubsonic {
-class OpenSubsonicDownloader;
 class SubsonicClient;
 } // namespace opensubsonic
 } // namespace mixxx
 
-/// Library feature that exposes the music library of a OpenSubsonic server
-/// (Subsonic / OpenSubsonic API) in the Mixxx library sidebar.
+/// Library feature that exposes the music library of an OpenSubsonic server
+/// (Subsonic / OpenSubsonic API) in the library sidebar.
 ///
-/// This is a read-only browser for now. Neither audio data nor metadata are
-/// imported into the Mixxx database, so nothing has to be cleaned up when the
-/// remote library changes.
+/// Nothing is imported into the local collection, so nothing has to be cleaned
+/// up when the remote library changes. The only write access is the rating of
+/// a song, which is stored on the server.
 ///
-/// Streamed audio data is buffered as a file on a RAM backed filesystem,
-/// because the Mixxx audio pipeline only accepts local files. The buffer is
-/// released as soon as the track is removed from all players and never
-/// survives the application run.
+/// Songs are played as network streams, no audio data is copied to disk: the
+/// players decode the stream URL directly and the waveform analysis reads the
+/// same stream. Nothing survives the application run because nothing is
+/// written.
 class OpenSubsonicFeature : public LibraryFeature {
     Q_OBJECT
 
@@ -76,22 +75,14 @@ class OpenSubsonicFeature : public LibraryFeature {
     void slotLoadRemoteUrlToPlayer(const QUrl& url,
             const QString& group,
             bool play);
-    void slotSongDownloaded(const QString& songId, const QString& localPath);
-    void slotDownloadFailed(const QString& songId, const QString& errorMessage);
-    /// Drops the buffered audio data of a track that is no longer loaded into
-    /// any player.
+    /// Hands a track that has been loaded into a player to the analyzer, so
+    /// that its waveform is computed even though it is not in the library.
     void slotPlayerTrackChanged(const QString& group,
             const TrackPointer& pNewTrack,
             const TrackPointer& pOldTrack);
 
   private:
-    struct PendingLoad {
-        QString group;
-        bool play = false;
-    };
-
     void rememberSongs(const QList<mixxx::opensubsonic::Song>& songs);
-    void discardBufferedAudioIfUnused(const QString& localPath);
     /// Streamed tracks are not part of the local library, so Mixxx never
     /// analyzes them and their waveform would stay empty. Once such a track
     /// has been loaded into a player it is handed to a dedicated analyzer
@@ -107,7 +98,6 @@ class OpenSubsonicFeature : public LibraryFeature {
 
     parented_ptr<TreeItemModel> m_pSidebarModel;
     mixxx::opensubsonic::SubsonicClient* const m_pClient;
-    mixxx::opensubsonic::OpenSubsonicDownloader* m_pDownloader;
     OpenSubsonicTrackModel* m_pTrackModel;
 
     /// Node identifiers ("artists", "artist:<id>") that have already been
@@ -124,8 +114,6 @@ class OpenSubsonicFeature : public LibraryFeature {
     /// Used to resolve a stream URL back to its song when it is dropped onto
     /// a player.
     QHash<QString, mixxx::opensubsonic::Song> m_songsById;
-    /// Player loads that are waiting for the download to finish.
-    QHash<QString, PendingLoad> m_pendingLoads;
 
     /// Analyzer thread for streamed tracks, created on demand.
     mixxx::DbConnectionPoolPtr m_pDbConnectionPool;

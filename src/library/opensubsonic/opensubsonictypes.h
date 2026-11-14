@@ -26,7 +26,7 @@ struct Album final {
 };
 
 /// Subset of the Subsonic "Child" (song) entity that is relevant for
-/// displaying and later on downloading a track.
+/// displaying and playing a track.
 ///
 /// Mixxx itself only knows a single artist/album artist string per track
 /// (mixxx::TrackInfo::artist), so the OpenSubsonic fields for multiple

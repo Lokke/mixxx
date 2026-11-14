@@ -7,8 +7,6 @@
 #include <utility>
 
 #include "library/dao/trackschema.h"
-#include "library/opensubsonic/opensubsoniccache.h"
-#include "library/opensubsonic/opensubsonicdownloader.h"
 #include "library/opensubsonic/subsonicclient.h"
 #include "library/starrating.h"
 #include "track/bpm.h"
@@ -113,13 +111,11 @@ const QHash<ColumnCache::Column, TrackModel::SortColumnId>& sortColumnIdMap() {
 OpenSubsonicTrackModel::OpenSubsonicTrackModel(
         QObject* parent,
         TrackCollectionManager* pTrackCollectionManager,
-        const mixxx::opensubsonic::SubsonicClient* pClient,
-        mixxx::opensubsonic::OpenSubsonicDownloader* pDownloader)
+        const mixxx::opensubsonic::SubsonicClient* pClient)
         : BaseTrackTableModel(parent,
                   pTrackCollectionManager,
                   "mixxx.db.model.opensubsonic"),
           m_pClient(pClient),
-          m_pDownloader(pDownloader),
           m_sortColumn(-1),
           m_sortOrder(Qt::AscendingOrder) {
     initTableColumnsAndHeaderProperties(opensubsonicTableColumns());
@@ -203,7 +199,7 @@ void OpenSubsonicTrackModel::rebuildVisibleSongs() {
     const Qt::SortOrder sortOrder = m_sortOrder;
     std::stable_sort(m_visibleSongs.begin(),
             m_visibleSongs.end(),
-            [sortColumn, sortOrder](const Song& lhs, const Song& rhs) {
+            [this, sortColumn, sortOrder](const Song& lhs, const Song& rhs) {
                 const QVariant lhsValue = fieldValue(lhs, sortColumn);
                 const QVariant rhsValue = fieldValue(rhs, sortColumn);
 
@@ -236,7 +232,7 @@ void OpenSubsonicTrackModel::sort(int column, Qt::SortOrder order) {
 
 QVariant OpenSubsonicTrackModel::fieldValue(
         const Song& song,
-        ColumnCache::Column column) {
+        ColumnCache::Column column) const {
     switch (column) {
     case ColumnCache::COLUMN_LIBRARYTABLE_ARTIST:
         return song.artist;
@@ -278,10 +274,10 @@ QVariant OpenSubsonicTrackModel::fieldValue(
     case ColumnCache::COLUMN_LIBRARYTABLE_PREVIEW:
         return false;
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_LOCATION:
-        return mixxx::opensubsonic::cachedSongFilePath(song);
+        // There is no local file, the stream URL is the closest match.
+        return m_pClient ? m_pClient->downloadUrl(song).toString() : QString();
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_DIRECTORY:
-        return QFileInfo(mixxx::opensubsonic::cachedSongFilePath(song))
-                .absolutePath();
+        return QString();
     case ColumnCache::COLUMN_TRACKLOCATIONSTABLE_FSDELETED:
         return false;
     default:
@@ -310,19 +306,13 @@ TrackPointer OpenSubsonicTrackModel::getTrack(const QModelIndex& index) const {
 
     const Song& song = m_visibleSongs.at(row);
 
-    // NOTE: No prefetch/download here. Playback is streamed directly from the
-    // server: songs that are not buffered yet are referenced by their stream
-    // URL, buffered songs by their local file. Downloads only happen as a
-    // fallback when a stream can not be opened.
-    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
-    mixxx::FileAccess fileAccess;
-    if (QFileInfo::exists(localPath) || !m_pClient) {
-        fileAccess = mixxx::FileAccess(mixxx::FileInfo(localPath));
-    } else {
-        fileAccess = mixxx::FileAccess(
-                mixxx::FileInfo::fromRemoteUrl(m_pClient->downloadUrl(song)));
+    // No download, no temporary file: the track references the stream URL and
+    // the audio pipeline decodes it directly from the server.
+    if (!m_pClient) {
+        return {};
     }
-    auto pTrack = Track::newTemporary(std::move(fileAccess));
+    auto pTrack = Track::newTemporary(mixxx::FileAccess(
+            mixxx::FileInfo::fromRemoteUrl(m_pClient->downloadUrl(song))));
     pTrack->setTitle(song.title);
     pTrack->setArtist(song.artist);
     pTrack->setAlbum(song.album);
@@ -356,12 +346,7 @@ QUrl OpenSubsonicTrackModel::getTrackUrl(const QModelIndex& index) const {
             index.row() >= m_visibleSongs.size()) {
         return {};
     }
-    const Song& song = m_visibleSongs.at(index.row());
-    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
-    if (QFileInfo::exists(localPath)) {
-        return QUrl::fromLocalFile(localPath);
-    }
-    return m_pClient->downloadUrl(song);
+    return m_pClient->downloadUrl(m_visibleSongs.at(index.row()));
 }
 
 TrackModel::Capabilities OpenSubsonicTrackModel::getCapabilities() const {
@@ -454,13 +439,9 @@ QString OpenSubsonicTrackModel::getTrackLocation(const QModelIndex& index) const
         return {};
     }
     const Song& song = m_visibleSongs.at(index.row());
-    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
-    if (QFileInfo::exists(localPath)) {
-        return localPath;
-    }
-    // Not cached yet: hand out the stream URL. It travels through the drag &
-    // drop pipeline into Library::slotLoadLocationToPlayer(), which forwards
-    // it to this feature for resolution (download + local load).
+    // The stream URL travels through the drag & drop pipeline into
+    // Library::slotLoadLocationToPlayer(), which forwards it to the feature
+    // that turns it into a playable track.
     if (m_pClient) {
         return m_pClient->downloadUrl(song).toString();
     }

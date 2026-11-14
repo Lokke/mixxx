@@ -181,8 +181,8 @@ Library::Library(
             this,
             &Library::onTrackAnalyzerProgress);
 
-    // Remote library provided by a OpenSubsonic (Subsonic) server.
-    // Browsing only for now, playback still needs a local cache.
+    // Remote library of an OpenSubsonic (Subsonic) server. Songs are streamed
+    // on demand, nothing is imported into the local collection.
     m_pOpenSubsonicFeature = new OpenSubsonicFeature(this, m_pConfig, m_pDbConnectionPool);
     addFeature(m_pOpenSubsonicFeature);
 
@@ -594,8 +594,8 @@ void Library::slotLoadLocationToPlayer(const QString& location, const QString& g
     const QString scheme = locationUrl.scheme().toLower();
     if (locationUrl.isValid() &&
             (scheme == QLatin1String("http") || scheme == QLatin1String("https"))) {
-        // Remote streams are not supported by the audio engine, they need to
-        // be materialised locally by the feature that owns the URL first.
+        // Hand remote streams to the feature that owns the URL, it knows how
+        // to turn the URL into something the players can open.
         emit loadRemoteUrlToPlayer(locationUrl, group, play);
         return;
     }

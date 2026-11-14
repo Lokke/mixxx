@@ -1459,8 +1459,6 @@ add_library(
   src/library/missing_hidden/hiddentablemodel.cpp
   src/library/missing_hidden/missingtablemodel.cpp
   src/library/mixxxlibraryfeature.cpp
-  src/library/opensubsonic/opensubsoniccache.cpp
-  src/library/opensubsonic/opensubsonicdownloader.cpp
   src/library/opensubsonic/opensubsonicfeature.cpp
   src/library/opensubsonic/opensubsonictrackmodel.cpp
   src/library/opensubsonic/subsonicclient.cpp

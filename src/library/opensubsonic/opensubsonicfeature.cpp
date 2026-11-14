@@ -1,12 +1,10 @@
 #include "library/opensubsonic/opensubsonicfeature.h"
 
-#include <QFile>
 #include <QModelIndex>
 #include <QUrlQuery>
+#include <utility>
 
 #include "library/library.h"
-#include "library/opensubsonic/opensubsoniccache.h"
-#include "library/opensubsonic/opensubsonicdownloader.h"
 #include "library/opensubsonic/opensubsonictrackmodel.h"
 #include "library/opensubsonic/subsonicclient.h"
 #include "library/treeitem.h"
@@ -107,9 +105,8 @@ OpenSubsonicFeature::OpenSubsonicFeature(
         : LibraryFeature(pLibrary, pConfig, QStringLiteral("tracks")),
           m_pSidebarModel(make_parented<TreeItemModel>(this)),
           m_pClient(new mixxx::opensubsonic::SubsonicClient(this)),
-          m_pDownloader(new mixxx::opensubsonic::OpenSubsonicDownloader(m_pClient, this)),
           m_pTrackModel(new OpenSubsonicTrackModel(
-                  this, pLibrary->trackCollectionManager(), m_pClient, m_pDownloader)),
+                  this, pLibrary->trackCollectionManager(), m_pClient)),
           m_pDbConnectionPool(std::move(pDbConnectionPool)),
           m_pAnalyzerThread(AnalyzerThread::NullPointer()) {
     connect(m_pClient,
@@ -152,26 +149,15 @@ OpenSubsonicFeature::OpenSubsonicFeature(
             m_pClient,
             &mixxx::opensubsonic::SubsonicClient::setRating);
 
-    // A remote stream URL (dropped onto a deck) is resolved here: the audio
-    // data is downloaded and the resulting local file is handed to the player.
+    // Remote stream URLs (dropped onto a deck, double clicked, ...) end up
+    // here: they are turned into tracks that the players can open.
     connect(m_pLibrary,
             &Library::loadRemoteUrlToPlayer,
             this,
             &OpenSubsonicFeature::slotLoadRemoteUrlToPlayer);
-    connect(m_pDownloader,
-            &mixxx::opensubsonic::OpenSubsonicDownloader::songDownloaded,
-            this,
-            &OpenSubsonicFeature::slotSongDownloaded);
-    connect(m_pDownloader,
-            &mixxx::opensubsonic::OpenSubsonicDownloader::downloadFailed,
-            this,
-            &OpenSubsonicFeature::slotDownloadFailed);
 
-    // Streamed audio data is buffered in a RAM backed directory that is
-    // scoped to this application run. Leftovers of previous runs are dropped.
-    mixxx::opensubsonic::prepareSessionCache();
-    // Buffered audio data may only be released once the track has been removed
-    // from all players.
+    // Streamed tracks are not part of the library, so nothing would analyze
+    // them. Hand every track that ends up in a player to the analyzer thread.
     connect(&PlayerInfo::instance(),
             &PlayerInfo::trackChanged,
             this,
@@ -186,8 +172,6 @@ OpenSubsonicFeature::~OpenSubsonicFeature() {
         m_pAnalyzerThread->stop();
         m_pAnalyzerThread = AnalyzerThread::NullPointer();
     }
-    // Nothing of the buffered audio data should survive this run.
-    mixxx::opensubsonic::purgeSessionCache();
 }
 
 void OpenSubsonicFeature::scheduleStreamTrackAnalysis(
@@ -291,7 +275,6 @@ void OpenSubsonicFeature::reloadSettings() {
     // Forget everything that belongs to the previous server/account.
     m_loadedNodes.clear();
     m_pendingRequests.clear();
-    m_pendingLoads.clear();
     m_songsById.clear();
     m_selectedAlbumId.clear();
     m_pTrackModel->clearSearch();
@@ -500,55 +483,19 @@ void OpenSubsonicFeature::slotLoadRemoteUrlToPlayer(
     kLogger.info() << "Loading remote track" << song.artist << "-"
                    << song.title << "into" << group;
 
-    const QString localPath = mixxx::opensubsonic::cachedSongFilePath(song);
-    if (mixxx::opensubsonic::OpenSubsonicDownloader::isCached(song)) {
-        m_pLibrary->slotLoadLocationToPlayer(localPath, group, play);
-        return;
-    }
-
-    // Not buffered yet: play the stream directly. The audio pipeline opens the
-    // URL through the FFmpeg sound source, so there is no need to wait for a
-    // complete download. Buffered songs (see above) are still preferred
-    // because they decode without network latency.
+    // The audio pipeline opens the stream URL directly, there is no local copy
+    // of the audio data involved.
     TrackPointer pStreamTrack = createStreamTrack(song, url);
-    if (pStreamTrack) {
-        emit loadTrackToPlayer(pStreamTrack,
-                group,
+    if (!pStreamTrack) {
+        kLogger.warning() << "Failed to create a stream track for" << url;
+        return;
+    }
+    emit loadTrackToPlayer(pStreamTrack,
+            group,
 #ifdef __STEM__
-                mixxx::StemChannelSelection(),
+            mixxx::StemChannelSelection(),
 #endif
-                play);
-        return;
-    }
-
-    // Fallback: download first, then load the resulting local file.
-    PendingLoad pendingLoad;
-    pendingLoad.group = group;
-    pendingLoad.play = play;
-    m_pendingLoads.insert(songId, pendingLoad);
-    m_pDownloader->enqueue(song);
-}
-
-void OpenSubsonicFeature::slotSongDownloaded(
-        const QString& songId,
-        const QString& localPath) {
-    const auto pendingIt = m_pendingLoads.find(songId);
-    if (pendingIt == m_pendingLoads.end()) {
-        return;
-    }
-    const PendingLoad pendingLoad = pendingIt.value();
-    m_pendingLoads.erase(pendingIt);
-    m_pLibrary->slotLoadLocationToPlayer(
-            localPath, pendingLoad.group, pendingLoad.play);
-}
-
-void OpenSubsonicFeature::slotDownloadFailed(
-        const QString& songId,
-        const QString& errorMessage) {
-    if (m_pendingLoads.remove(songId) > 0) {
-        kLogger.warning() << "Failed to load remote track" << songId
-                          << errorMessage;
-    }
+            play);
 }
 
 void OpenSubsonicFeature::slotPlayerTrackChanged(
@@ -556,34 +503,11 @@ void OpenSubsonicFeature::slotPlayerTrackChanged(
         const TrackPointer& pNewTrack,
         const TrackPointer& pOldTrack) {
     Q_UNUSED(group);
+    Q_UNUSED(pOldTrack);
     if (pNewTrack && pNewTrack->getFileInfo().isRemote()) {
         // Streamed tracks bypass the library, so their waveform has to be
         // computed here instead of by the library analysis scheduler.
         scheduleStreamTrackAnalysis(pNewTrack);
-    }
-    if (!pOldTrack) {
-        return;
-    }
-    discardBufferedAudioIfUnused(pOldTrack->getLocation());
-}
-
-void OpenSubsonicFeature::discardBufferedAudioIfUnused(
-        const QString& localPath) {
-    if (!mixxx::opensubsonic::isSessionCacheFile(localPath)) {
-        // Not one of our buffered files, nothing to clean up.
-        return;
-    }
-    if (PlayerInfo::instance().isFileLoaded(localPath)) {
-        // The same track is still loaded into another player.
-        return;
-    }
-    // Deleting a file that is still held open by the audio engine is safe, the
-    // data remains available until the last handle is closed.
-    if (QFile::remove(localPath)) {
-        kLogger.debug() << "Released buffered audio data of" << localPath;
-    } else {
-        kLogger.warning() << "Could not release buffered audio data of"
-                          << localPath;
     }
 }
 

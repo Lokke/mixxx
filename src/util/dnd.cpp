@@ -70,7 +70,7 @@ QList<mixxx::FileInfo> dropEventFiles(
 /// Whether the URL references a remote audio stream instead of a local file.
 ///
 /// Such URLs are resolved after the drop by the library feature that owns
-/// them (e.g. "OpenSubsonic"), which materialises the audio data locally.
+/// them (e.g. "OpenSubsonic"), which turns them into a playable track.
 bool isRemoteAudioUrl(const QUrl& url) {
     const QString scheme = url.scheme().toLower();
     return scheme == QLatin1String("http") || scheme == QLatin1String("https");
@@ -332,8 +332,7 @@ void DragAndDropHelper::handleTrackDropEvent(
             return;
         } else {
             // A remote stream URL is passed through unchanged. The library
-            // feature that owns the URL downloads it and loads the resulting
-            // local file.
+            // feature that owns the URL decides how to load it.
             const QUrl remoteUrl = firstRemoteAudioUrl(pEvent->mimeData()->urls());
             if (!remoteUrl.isEmpty()) {
                 pEvent->accept();

@@ -153,8 +153,7 @@ class Library: public QObject {
     void loadTrack(TrackPointer pTrack);
     /// Emitted for non-local (http/https) locations that are handed to a
     /// player, e.g. by dropping a remote track onto a deck. The library
-    /// feature that owns the URL resolves it and calls
-    /// slotLoadLocationToPlayer() with the resulting local file.
+    /// feature that owns the URL is responsible for loading the track.
     void loadRemoteUrlToPlayer(const QUrl& url, const QString& group, bool play);
 #ifdef __STEM__
     void loadTrackToPlayer(TrackPointer pTrack,

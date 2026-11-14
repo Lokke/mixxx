@@ -1,5 +1,8 @@
 #include "sources/soundsourceffmpeg.h"
 
+#include <algorithm>
+#include <cstdarg>
+
 extern "C" {
 
 #include <libavutil/avutil.h>
@@ -58,7 +61,7 @@ constexpr int kFirstAudioStream = -1;
 
 const Logger kLogger("SoundSourceFFmpeg");
 
-/// Forwards the messages of libav* to the Mixxx log. This is required to
+/// Forwards the messages of libav* to the application log. This is required to
 /// diagnose problems with network streams (HTTP status codes, seek errors,
 /// unsupported protocols, ...) that libav* only reports through av_log().
 void logFFmpegMessage(

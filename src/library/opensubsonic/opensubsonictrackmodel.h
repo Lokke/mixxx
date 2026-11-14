@@ -10,24 +10,23 @@
 
 namespace mixxx {
 namespace opensubsonic {
-class OpenSubsonicDownloader;
 class SubsonicClient;
 } // namespace opensubsonic
 } // namespace mixxx
 
-/// Read-only track table model for songs of a remote OpenSubsonic server.
+/// Track table model for songs of a remote OpenSubsonic server.
 ///
-/// The model does not import anything into the Mixxx database. It creates
+/// The model does not import anything into the local database. It creates
 /// temporary Track objects on demand, which is exactly what
-/// BaseTrackTableModel has been designed for.
+/// BaseTrackTableModel has been designed for. Only the rating column is
+/// editable, all other values belong to the server.
 class OpenSubsonicTrackModel : public BaseTrackTableModel {
     Q_OBJECT
 
   public:
     OpenSubsonicTrackModel(QObject* parent,
             TrackCollectionManager* pTrackCollectionManager,
-            const mixxx::opensubsonic::SubsonicClient* pClient,
-            mixxx::opensubsonic::OpenSubsonicDownloader* pDownloader);
+            const mixxx::opensubsonic::SubsonicClient* pClient);
     ~OpenSubsonicTrackModel() override = default;
 
     /// Songs of the selected album. Also leaves search mode.
@@ -76,14 +75,13 @@ class OpenSubsonicTrackModel : public BaseTrackTableModel {
             int role) override;
 
   private:
-    static QVariant fieldValue(
+    QVariant fieldValue(
             const mixxx::opensubsonic::Song& song,
-            ColumnCache::Column column);
+            ColumnCache::Column column) const;
     bool updateSongRating(const QString& songId, int rating);
     void rebuildVisibleSongs();
 
     const mixxx::opensubsonic::SubsonicClient* const m_pClient;
-    mixxx::opensubsonic::OpenSubsonicDownloader* const m_pDownloader;
 
     /// Songs of the currently selected album.
     QList<mixxx::opensubsonic::Song> m_albumSongs;
