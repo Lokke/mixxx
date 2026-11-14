@@ -610,9 +610,9 @@ SoundSource::OpenResult SoundSourceFFmpeg::tryOpen(
         const OpenParams& params) {
     // Open input. Remote streams (http/https) are passed to FFmpeg as URL,
     // local files as plain file name.
-    const QString inputLocation = getLocalFileName().isEmpty()
-            ? getUrl().toString()
-            : getLocalFileName();
+    const QString inputLocation = isLocalFile()
+            ? getLocalFileName()
+            : getUrl().toString();
     {
         AVFormatContext* pavInputFormatContext =
                 openInputFile(inputLocation);
@@ -1134,9 +1134,14 @@ bool SoundSourceFFmpeg::adjustCurrentPosition(SINT startIndex) {
     avcodec_flush_buffers(m_pavCodecContext);
 
     // Seek to new position
-    const int64_t seekTimestamp =
-            std::max(convertFrameIndexToStreamTime(*m_pavStream, seekIndex),
-                    getStreamStartTime(*m_pavStream));
+    int64_t seekTimestamp =
+            convertFrameIndexToStreamTime(*m_pavStream, seekIndex);
+    if (!isLocalFile()) {
+        // Network streams must not be seeked before their first frame, some
+        // protocols reject negative timestamps. Local files keep the original
+        // behaviour of seeking into the preroll before the first frame.
+        seekTimestamp = std::max(seekTimestamp, getStreamStartTime(*m_pavStream));
+    }
     int av_seek_frame_result = av_seek_frame(
             m_pavInputFormatContext,
             m_pavStream->index,
