@@ -404,6 +404,36 @@ AVFormatContext* SoundSourceFFmpeg::openInputFile(
     return pavInputFormatContext;
 }
 
+AVFormatContext* SoundSourceFFmpeg::openRemoteInputFile(const QUrl& url) {
+    DEBUG_ASSERT(!url.isLocalFile());
+    m_pHttpStreamIo = std::make_unique<mixxx::HttpStreamIo>(url);
+    AVFormatContext* pInputFormatContext = avformat_alloc_context();
+    if (pInputFormatContext == nullptr) {
+        kLogger.warning() << "Failed to allocate the input format context";
+        return nullptr;
+    }
+    m_pCustomAvioContext = m_pHttpStreamIo->createAvioContext();
+    if (m_pCustomAvioContext == nullptr) {
+        avformat_free_context(pInputFormatContext);
+        m_pHttpStreamIo.reset();
+        return nullptr;
+    }
+    // libav reads the stream through the Qt based reader. It must not release
+    // the AVIO context by itself, this is done in close().
+    pInputFormatContext->pb = m_pCustomAvioContext;
+    pInputFormatContext->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+    const int result = avformat_open_input(
+            &pInputFormatContext, nullptr, nullptr, nullptr);
+    if (result < 0) {
+        kLogger.warning().noquote()
+                << "avformat_open_input() failed for the stream:"
+                << formatErrorString(result);
+        DEBUG_ASSERT(pInputFormatContext == nullptr);
+    }
+    return pInputFormatContext;
+}
+
 void SoundSourceFFmpeg::InputAVFormatContextPtr::take(
         AVFormatContext** ppavInputFormatContext) {
     DEBUG_ASSERT(ppavInputFormatContext != nullptr);
@@ -577,6 +607,7 @@ QString SoundSourceProviderFFmpeg::getVersionString() const {
 
 SoundSourceFFmpeg::SoundSourceFFmpeg(const QUrl& url, int wantedStreamIndex)
         : SoundSource(url),
+          m_pCustomAvioContext(nullptr),
           m_pavStream(nullptr),
           m_pavDecodedFrame(nullptr),
           m_seekPrerollFrameCount(0),
@@ -608,24 +639,23 @@ SoundSourceFFmpeg::~SoundSourceFFmpeg() {
 SoundSource::OpenResult SoundSourceFFmpeg::tryOpen(
         OpenMode /*mode*/,
         const OpenParams& params) {
-    // Open input. Remote streams (http/https) are passed to FFmpeg as URL,
-    // local files as plain file name.
-    const QString inputLocation = isLocalFile()
-            ? getLocalFileName()
-            : getUrl().toString();
-    {
-        AVFormatContext* pavInputFormatContext =
-                openInputFile(inputLocation);
-        if (pavInputFormatContext == nullptr) {
-            kLogger.warning()
-                    << "Failed to open input file"
-                    << inputLocation;
-            return OpenResult::Failed;
-        }
-        m_pavInputFormatContext.take(&pavInputFormatContext);
+    // Open input. Remote streams (http/https) are read through Qt, local files
+    // are opened by libav.
+    AVFormatContext* pavInputFormatContext = nullptr;
+    if (isLocalFile()) {
+        pavInputFormatContext = openInputFile(getLocalFileName());
+    } else {
+        pavInputFormatContext = openRemoteInputFile(getUrl());
     }
+    if (pavInputFormatContext == nullptr) {
+        kLogger.warning()
+                << "Failed to open input file"
+                << getUrl().toString();
+        return OpenResult::Failed;
+    }
+    m_pavInputFormatContext.take(&pavInputFormatContext);
     kLogger.debug()
-            << "Opened input" << inputLocation
+            << "Opened input" << getUrl().toString()
             << "seekable:" << (m_pavInputFormatContext->pb != nullptr &&
                                       m_pavInputFormatContext->pb->seekable)
             << "seek-supported:" << (m_pavInputFormatContext->pb != nullptr &&
@@ -1030,6 +1060,11 @@ void SoundSourceFFmpeg::close() {
     m_pSwrContext.close();
     m_pavCodecContext.close();
     m_pavInputFormatContext.close();
+    if (m_pCustomAvioContext != nullptr) {
+        // The AVIO context is owned by us, libav does not release it.
+        mixxx::HttpStreamIo::releaseAvioContext(&m_pCustomAvioContext);
+    }
+    m_pHttpStreamIo.reset();
     m_pavStream = nullptr;
 }
 

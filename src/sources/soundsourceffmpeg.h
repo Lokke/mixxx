@@ -8,6 +8,7 @@ extern "C" {
 
 } // extern "C"
 
+#include "sources/httpstreamio.h"
 #include "sources/readaheadframebuffer.h"
 #include "sources/soundsourceprovider.h"
 
@@ -179,10 +180,18 @@ class SoundSourceFFmpeg : public SoundSource {
             audio::ChannelCount* pResampledChannelCount,
             audio::SampleRate* pResampledSampleRate);
 
+    /// Opens a network stream through a Qt based reader instead of letting
+    /// libav open the URL itself. The latter only works if libav has been
+    /// built with a TLS backend, which is not the case for all builds.
+    AVFormatContext* openRemoteInputFile(const QUrl& url);
+
     // FFmpeg static constants
     static constexpr AVSampleFormat s_avSampleFormat = AV_SAMPLE_FMT_FLT;
 
     InputAVFormatContextPtr m_pavInputFormatContext;
+    /// Set when the input is read through m_pHttpStreamIo instead of libav.
+    AVIOContext* m_pCustomAvioContext;
+    std::unique_ptr<mixxx::HttpStreamIo> m_pHttpStreamIo;
     AVStream* m_pavStream;
     AVCodecContextPtr m_pavCodecContext;
     AVFrame* m_pavDecodedFrame;

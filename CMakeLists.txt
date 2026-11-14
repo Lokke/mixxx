@@ -1610,6 +1610,7 @@ add_library(
   src/soundio/soundmanagerutil.cpp
   src/sources/audiosource.cpp
   src/sources/audiosourcestereoproxy.cpp
+  src/sources/httpstreamio.cpp
   src/sources/metadatasource.cpp
   src/sources/metadatasourcetaglib.cpp
   src/sources/readaheadframebuffer.cpp
