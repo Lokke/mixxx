@@ -112,7 +112,7 @@ bool parseRatingContext(
     }
     *pSongId = payload.left(separatorIndex);
     bool ok = false;
-    *pRating = payload.mid(separatorIndex + 1).toInt(&ok);
+    *pRating = QStringView(payload).mid(separatorIndex + 1).toInt(&ok);
     return ok && !pSongId->isEmpty();
 }
 
